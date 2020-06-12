@@ -119,145 +119,143 @@ async def on_message(message):
                 attributs[6], attributs[7], attributs[8])
         if message.content.startswith(prefix):
             text = message.content[1:]
-            if client.is_ready():
 
-                if text.startswith("delete all messages."):
+            if text.startswith("delete all messages."):
+                if message.author.id == 499302416106258432:
+                    try:
+                        deleted = await message.channel.purge()
+                        await message.channel.send(len(deleted))
+                    except discord.errors.Forbidden:
+                        await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
+                else:
+                    await message.channel.send("T'es pas joshinou")
+            if text.startswith("prefixe "):
+                text = text[len("prefixe "):]
+                if len(text) == 1:
                     if message.author.id == 499302416106258432:
-                        try:
-                            deleted = await message.channel.purge()
-                            await message.channel.send(len(deleted))
-                        except discord.errors.Forbidden:
-                            await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
+                        json_guilds[0][str(message.guild.id)]["prefix"] = text
+                        await message.channel.send("prefixe : '%s'" % json_guilds[0][str(message.guild.id)]["prefix"])
                     else:
-                        await message.channel.send("T'es pas joshinou")
-                if text.startswith("prefixe "):
-                    text = text[len("prefixe "):]
-                    if len(text) == 1:
-                        if message.author.id == 499302416106258432:
-                            json_guilds[0][str(message.guild.id)]["prefix"] = text
-                            await message.channel.send("prefixe : '%s'" % json_guilds[0][str(message.guild.id)]["prefix"])
-                        else:
-                            await message.channel.send("T'es pas joshinou (pas de permission)")
-                    else:
-                        await message.channel.send("%s ? C'est pas un préfixe, ça, gros beta..." % text)
-                if text.startswith('help'):
-                    helpMessage = discord.Embed(color=0x00ff00)
-                    helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                    helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
-                                                                          "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
-                                          inline=False)
-                    helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
-                                          value=":book: `<anagramme(s) ` pour partie simple.\n"
-                                                ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
-                                                ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
-                                                "\nEn cours de partie,`<anagramme(s) ` arrête la partie."
-                                                "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (
-                                                    jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,
-                                                    jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),
-                                          inline=False)
-                    await message.channel.send(embed=helpMessage)
+                        await message.channel.send("T'es pas joshinou (pas de permission)")
+                else:
+                    await message.channel.send("%s ? C'est pas un préfixe, ça, gros beta..." % text)
+            if text.startswith('help'):
+                helpMessage = discord.Embed(color=0x00ff00)
+                helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
+                                                                      "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
+                                      inline=False)
+                helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
+                                      value=":book: `<anagramme(s) ` pour partie simple.\n"
+                                            ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
+                                            ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
+                                            "\nEn cours de partie,`<anagramme(s) ` arrête la partie."
+                                            "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (
+                                                jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,
+                                                jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),
+                                      inline=False)
+                await message.channel.send(embed=helpMessage)
 
-                elif text == "stop":
-                    if message.author.id == 499302416106258432:
-                        await message.channel.send("Je vais faire un somme.")
-                        await client.close()
-                    else:
-                        await message.channel.send("T'es pas joshinou")
+            elif text == "stop":
+                if message.author.id == 499302416106258432:
+                    await message.channel.send("Je vais faire un somme.")
+                    await client.close()
+                else:
+                    await message.channel.send("T'es pas joshinou")
 
-                if j.partieEnPrepOuCommencee:
-                    if text.startswith('anagramme'):
-                        j.nbTours = j.tourNumero
+            if j.partieEnPrepOuCommencee:
+                if text.startswith('anagramme'):
+                    j.nbTours = j.tourNumero
+                    await j.prochainTourOuFin(message, json_guilds)
+
+                elif j.tourNumero < j.nbTours + 1:
+                    essai = j.decode(text)
+
+
+
+                    if essai == j.decode(j.mot):
+
+                        await message.add_reaction("😄")
+                        name = message.author.name
+                        if not name in j.scores:
+                            j.scores[name] = 0
+                        j.scores[name] += j.niveau * 100
+
+                        leaderboard = '\n'.join(
+                            [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
+                            "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        if len(leaderboard) > 0:
+                            embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
+
+                        await message.channel.send(embed=embed)
+
+                        j.tourCommence = False
                         await j.prochainTourOuFin(message, json_guilds)
 
-                    elif j.tourNumero < j.nbTours + 1:
-                        essai = j.decode(text)
 
 
 
-                        if essai == j.decode(j.mot):
+                    elif essai == "abandon":
+                        await message.add_reaction("😢")
+                        leaderboard = '\n'.join(
+                            [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
+                            "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        if len(leaderboard) > 0:
+                            embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
-                            await message.add_reaction("😄")
-                            name = message.author.name
-                            if not name in j.scores:
-                                j.scores[name] = 0
-                            j.scores[name] += j.niveau * 100
+                        await message.channel.send(embed=embed)
+                        await j.prochainTourOuFin(message, json_guilds)
 
-                            leaderboard = '\n'.join(
-                                [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                            embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
-                                "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
-                            if len(leaderboard) > 0:
-                                embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
-
-                            await message.channel.send(embed=embed)
-
-                            j.tourCommence = False
-                            await j.prochainTourOuFin(message, json_guilds)
+                    else:
+                        await message.add_reaction("😬")
 
 
-
-
-                        elif essai == "abandon":
-                            await message.add_reaction("😢")
-                            leaderboard = '\n'.join(
-                                [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                            embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
-                                "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
-                            if len(leaderboard) > 0:
-                                embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
-
-                            await message.channel.send(embed=embed)
-                            await j.prochainTourOuFin(message, json_guilds)
-
-                        else:
-                            await message.add_reaction("😬")
-
-
-                else:
-                    if text.startswith('anagramme'):
-                        erreur = False
-                        try:
-                            textList = re.findall('anagramme(?:s)?(.*)', text)[0].split()
-                        except:
-                            await message.channel.send("Mauvaise saisie")
-                            erreur = True
-                        j = jeu(1, True, 1, 0, {}, False, False, False, "")
-                        if not erreur and len(textList) == 0:
-                            j = jeu(1, True, 1, 0, {}, False, False, False, "")
-                        elif not erreur and len(textList) == 1:
-                            try:
-                                j = jeu(int(textList[0]), True, 1, 0, {}, False, False, False, "")
-                            except MauvaisIndice as inst:
-                                await message.channel.send(inst)
-                                erreur = True
-                            except:
-                                await message.channel.send(
-                                    "Mauvaise saisie : `<anagramme(s) [niveau]` prend le niveau en argument.")
-                                erreur = True
-                        elif not erreur and len(textList) == 3:
-                            try:
-                                j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
-                                        "")
-                                await partieProMessage(j, message)
-                            except MauvaisIndice as inst:
-                                await message.channel.send(inst)
-                                erreur = True
-
-                        if not erreur:
-                            j.partieEnPrepOuCommencee = True
-                            j.partieCommencee = True
-                            j.mot = j.pickword()
-                            motMelange = j.shuffledWord(j.mot)
-                            embed = discord.Embed(title="Mot : %s" % motMelange,
-                                                  description="Tour %i/%i" % (j.tourNumero + 1, j.nbTours), color=0xff0000)
-
-                            await message.channel.send(embed=embed)
-                            j.tourNumero += 1
-                            j.tourCommence = True
-                json_guilds[0][str(message.guild.id)]['attributsAnagame'] = j.getAttributes()
-                json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
             else:
-                await message.channel.send("Mon cache n'est pas encore prêt, gros beta de <@%s>." % message.author.name)
+                if text.startswith('anagramme'):
+                    erreur = False
+                    try:
+                        textList = re.findall('anagramme(?:s)?(.*)', text)[0].split()
+                    except:
+                        await message.channel.send("Mauvaise saisie")
+                        erreur = True
+                    j = jeu(1, True, 1, 0, {}, False, False, False, "")
+                    if not erreur and len(textList) == 0:
+                        j = jeu(1, True, 1, 0, {}, False, False, False, "")
+                    elif not erreur and len(textList) == 1:
+                        try:
+                            j = jeu(int(textList[0]), True, 1, 0, {}, False, False, False, "")
+                        except MauvaisIndice as inst:
+                            await message.channel.send(inst)
+                            erreur = True
+                        except:
+                            await message.channel.send(
+                                "Mauvaise saisie : `<anagramme(s) [niveau]` prend le niveau en argument.")
+                            erreur = True
+                    elif not erreur and len(textList) == 3:
+                        try:
+                            j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
+                                    "")
+                            await partieProMessage(j, message)
+                        except MauvaisIndice as inst:
+                            await message.channel.send(inst)
+                            erreur = True
+
+                    if not erreur:
+                        j.partieEnPrepOuCommencee = True
+                        j.partieCommencee = True
+                        j.mot = j.pickword()
+                        motMelange = j.shuffledWord(j.mot)
+                        embed = discord.Embed(title="Mot : %s" % motMelange,
+                                              description="Tour %i/%i" % (j.tourNumero + 1, j.nbTours), color=0xff0000)
+
+                        await message.channel.send(embed=embed)
+                        j.tourNumero += 1
+                        j.tourCommence = True
+            json_guilds[0][str(message.guild.id)]['attributsAnagame'] = j.getAttributes()
+            json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+        
     print(asyncio.get_running_loop(), "released lock")
 
 
