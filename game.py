@@ -4,7 +4,7 @@ from typing import Dict
 from unidecode import unidecode as decode
 import discord
 
-token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
+token = "TOKEN"
 client = discord.Client()
 desc = '''Coucou. Je suis le bb de joshinou. Mon préfixe est \'<\'.'''
 
