@@ -5,7 +5,7 @@ from createLists import startupCheck, appendFrom
 from game import jeu, MauvaisIndice
 import discord
 import logging
-
+from caFePeur import randomGifUrl
 
 token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
 client = discord.Client()
@@ -107,13 +107,12 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_message(message):
-    print(asyncio.get_running_loop(), "is trying to acquire lock")
-
+    #print(asyncio.get_running_loop(), "is trying to acquire lock")
     async with lock: #prevents race conditions. Is probably going to
                      #make bot really slower if an alternative
                      #isn't found and there's multiple servers
                      #using Joshibot.
-        print(asyncio.get_running_loop(), "has acquired lock")
+        #print(asyncio.get_running_loop(), "has acquired lock")
         str_data = open('guilds.json').read()
         json_guilds = json.loads(str_data)
 
@@ -126,7 +125,18 @@ async def on_message(message):
         if message.content.startswith(prefix):
             text = message.content[1:]
 
-            if text.startswith("delete all messages."):
+
+            if text.startswith("ca fé peur") :
+                if message.author.id==499302416106258432 or message.author.id==193424451013050368:
+                    randomHorrorGif = discord.Embed(color=0xee82ee)
+                    randomHorrorGif.set_image(url=randomGifUrl())
+                    await message.channel.send(embed=randomHorrorGif)
+                else:
+                    await message.channel.send("Tu n'est pas Joshinou ou Yehlowinou, àbgebundeni bluetwurscht... ")
+
+
+
+            elif text.startswith("delete all messages."):
                 if message.author.id == 499302416106258432:
                     try:
                         deleted = await message.channel.purge()
@@ -259,11 +269,10 @@ async def on_message(message):
                         await message.channel.send(embed=embed)
                         j.tourNumero += 1
                         j.tourCommence = True
-                        print(message.channel.id)
             json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][message.channel.id] = j.getAttributes()
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
-    print(asyncio.get_running_loop(), "released lock")
+    #print(asyncio.get_running_loop(), "released lock")
 
 
 client.run(token)
