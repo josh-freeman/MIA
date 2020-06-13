@@ -41,6 +41,7 @@ def appendFrom(url, fr: bool, html: bool,json_data):
                     if 1 < len(text) and text.isalpha():
                         json_data["FR" if fr else "EN"].append(text)
                         print("trouvé :", text)
+        json_data["FR" if fr else "EN"].sort(key=len)
     else:
         for i in printHtml(url).split('\n'):
             text=i

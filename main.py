@@ -24,8 +24,8 @@ async def on_ready():
     json_data = json.loads(str_data)
     if not check:
         appendFrom(
-            "https://gist.githubusercontent.com/h3xx/1976236/raw/bbabb412261386673eff521dddbe1dc815373b1d/wiki-100k.txt",
-            False, False,json_data)
+            "https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/PG/2006/04/1-10000",
+            False, True,json_data)
         appendFrom("https://fr.m.wiktionary.org/wiki/Utilisateur:Darkdadaah/Listes/Mots_dump/frwiki/2016-02-03",
                    True, True,json_data)
         print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]))
@@ -40,10 +40,12 @@ async def on_ready():
     await client.wait_until_ready()
     await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Bien réveillé.",
                                                            type=discord.ActivityType.watching))
+
     for guild in client.guilds:
+
         if str(guild.id) not in json_guilds[0]:
             json_guilds[0][guild.id] = {"prefix": "<",
-                                        "attributsAnagame": jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes(),
+                                        "SalonsEtJeuxEnCoursAssocies": {channel.id:jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for channel in guild.text_channels},
                                         "XPjoueurs": {member.id: 0 for member in guild.members}
                                         }
 
@@ -84,7 +86,9 @@ async def on_guild_join(guild):
 
     if guild.id not in json_guilds[0]:
         json_guilds[0][guild.id] = {"prefix": "<",
-                                    "attributsAnagame": jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes(),
+                                    "SalonsEtJeuxEnCoursAssocies": {
+                                        channel.id: jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for
+                                        channel in guild.text_channels},
                                     "XPjoueurs": {member.id: 0 for member in guild.members}
                                     }
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
@@ -104,16 +108,18 @@ async def on_guild_remove(guild):
 @client.event
 async def on_message(message):
     print(asyncio.get_running_loop(), "is trying to acquire lock")
+
     async with lock: #prevents race conditions. Is probably going to
                      #make bot really slower if an alternative
                      #isn't found and there's multiple servers
                      #using Joshibot.
         print(asyncio.get_running_loop(), "has acquired lock")
-
         str_data = open('guilds.json').read()
         json_guilds = json.loads(str_data)
+
         prefix = json_guilds[0][str(message.guild.id)]["prefix"]
-        attributs = json_guilds[0][str(message.guild.id)]['attributsAnagame']
+
+        attributs = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)]
 
         j = jeu(int(attributs[0]), attributs[1], int(attributs[2]), int(attributs[3]), attributs[4], attributs[5],
                 attributs[6], attributs[7], attributs[8])
@@ -253,9 +259,10 @@ async def on_message(message):
                         await message.channel.send(embed=embed)
                         j.tourNumero += 1
                         j.tourCommence = True
-            json_guilds[0][str(message.guild.id)]['attributsAnagame'] = j.getAttributes()
+                        print(message.channel.id)
+            json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][message.channel.id] = j.getAttributes()
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
-        
+
     print(asyncio.get_running_loop(), "released lock")
 
 
