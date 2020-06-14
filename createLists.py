@@ -15,6 +15,10 @@ def printHtml(url):
 
     return mystr
 
+def getToken(testBot:bool):
+   str_data = open('tokens.json').read()
+   token_data = json.loads(str_data)
+   return token_data["testBot" if testBot else "realBot"]
 
 def startupCheck(filename,s):
     if os.path.exists(filename) and os.access('.', os.R_OK):
