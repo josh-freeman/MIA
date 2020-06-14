@@ -6,7 +6,7 @@ from game import jeu, MauvaisIndice
 import discord
 from caFePeur import randomGifUrl
 
-token = getToken("joshibot")
+token = getToken("joshibot") #either "joshibot" or "testbot"
 client = discord.Client()
 lock = asyncio.Lock()
 
