@@ -1,13 +1,12 @@
 import asyncio
 import re
 import json
-from createLists import startupCheck, appendFrom
+from createLists import startupCheck, appendFrom, getToken
 from game import jeu, MauvaisIndice
 import discord
-import logging
 from caFePeur import randomGifUrl
 
-token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
+token = getToken(True)
 client = discord.Client()
 lock = asyncio.Lock()
 
