@@ -15,7 +15,7 @@ def printHtml(url):
 
     return mystr
 
-def getToken(RealOrTest:str):
+def getToken(realOrTest:str):
    str_data = open('tokens.json').read()
    token_data = json.loads(str_data)
    return token_data[realOrTest]
