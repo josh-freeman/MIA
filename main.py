@@ -7,9 +7,10 @@ import discord
 import logging
 from caFePeur import randomGifUrl
 
-token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
+token = "NzAxNDg3NjkyNzkzMjQ5ODMz.XuSdCA.wHq7h7JbcM_-vKq-WjLKeWPAsc8"
 client = discord.Client()
 lock = asyncio.Lock()
+
 
 async def partieProMessage(j: jeu, message):
     embed = discord.Embed(title="Partie pro lancée", color=0x00ff00)
@@ -19,15 +20,15 @@ async def partieProMessage(j: jeu, message):
 
 @client.event
 async def on_ready():
-    check=startupCheck('liste.json', json.dumps({"FR": [], "EN": []}))
+    check = startupCheck('liste.json', json.dumps({"FR": [], "EN": []}))
     str_data = open('liste.json').read()
     json_data = json.loads(str_data)
     if not check:
         appendFrom(
             "https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/PG/2006/04/1-10000",
-            False, True,json_data)
+            False, True, json_data)
         appendFrom("https://fr.m.wiktionary.org/wiki/Utilisateur:Darkdadaah/Listes/Mots_dump/frwiki/2016-02-03",
-                   True, True,json_data)
+                   True, True, json_data)
         print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]))
         json_data["nbMots FR"] = len(json_data["FR"])
         json_data["nbMots EN"] = len(json_data["EN"])
@@ -44,8 +45,10 @@ async def on_ready():
     for guild in client.guilds:
 
         if str(guild.id) not in json_guilds[0]:
-            json_guilds[0][guild.id] = {"prefix": "<",
-                                        "SalonsEtJeuxEnCoursAssocies": {channel.id:jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for channel in guild.text_channels},
+            json_guilds[0][guild.id] = {"prefix": "!",
+                                        "SalonsEtJeuxEnCoursAssocies": {
+                                            channel.id: jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes()
+                                            for channel in guild.text_channels},
                                         "XPjoueurs": {member.id: 0 for member in guild.members}
                                         }
 
@@ -85,7 +88,7 @@ async def on_guild_join(guild):
             i += 1
 
     if guild.id not in json_guilds[0]:
-        json_guilds[0][guild.id] = {"prefix": "<",
+        json_guilds[0][guild.id] = {"prefix": "!",
                                     "SalonsEtJeuxEnCoursAssocies": {
                                         channel.id: jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for
                                         channel in guild.text_channels},
@@ -107,12 +110,12 @@ async def on_guild_remove(guild):
 
 @client.event
 async def on_message(message):
-    #print(asyncio.get_running_loop(), "is trying to acquire lock")
-    async with lock: #prevents race conditions. Is probably going to
-                     #make bot really slower if an alternative
-                     #isn't found and there's multiple servers
-                     #using Joshibot.
-        #print(asyncio.get_running_loop(), "has acquired lock")
+    # print(asyncio.get_running_loop(), "is trying to acquire lock")
+    async with lock:  # prevents race conditions. Is probably going to
+        # make bot really slower if an alternative
+        # isn't found and there's multiple servers
+        # using Joshibot.
+        # print(asyncio.get_running_loop(), "has acquired lock")
         str_data = open('guilds.json').read()
         json_guilds = json.loads(str_data)
 
@@ -125,9 +128,8 @@ async def on_message(message):
         if message.content.startswith(prefix):
             text = message.content[1:]
 
-
-            if text.startswith("ca fé peur") :
-                if message.author.id==499302416106258432 or message.author.id==193424451013050368:
+            if text.startswith("ca fé peur"):
+                if message.author.id == 499302416106258432 or message.author.id == 193424451013050368:
                     randomHorrorGif = discord.Embed(color=0xee82ee)
                     randomHorrorGif.set_image(url=randomGifUrl())
                     await message.channel.send(embed=randomHorrorGif)
@@ -158,19 +160,27 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
-                                                                      "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `!help` pour help."
+                                                                      "\n:vulcan:  `!prefixe [prefixe]` pour changer de prefixe.",
                                       inline=False)
                 helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
-                                      value=":book: `<anagramme(s) ` pour partie simple.\n"
-                                            ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
-                                            ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
-                                            "\nEn cours de partie,`<anagramme(s) ` arrête la partie."
+                                      value=":book: `!anagramme(s) ` pour partie simple.\n"
+                                            ":book: `!anagramme(s) [niveau]` pour préciser le niveau.\n"
+                                            ":book: `!anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
+                                            "\nEn cours de partie,`!anagramme(s) ` arrête la partie."
                                             "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (
                                                 jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,
                                                 jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),
                                       inline=False)
                 await message.channel.send(embed=helpMessage)
+
+
+            elif text.startswith("my_stats"):
+                await message.channel.send("Under construction, depends if Josh agrees with this idea")
+                if message.author.id == 499302416106258432:
+                    await message.author.send("What do you think about it Josh?")
+
+
 
             elif text == "stop":
                 if message.author.id == 499302416106258432:
@@ -186,8 +196,6 @@ async def on_message(message):
 
                 elif j.tourNumero < j.nbTours + 1:
                     essai = j.decode(text)
-
-
 
                     if essai == j.decode(j.mot):
 
@@ -236,19 +244,30 @@ async def on_message(message):
                     except:
                         await message.channel.send("Mauvaise saisie")
                         erreur = True
-                    j = jeu(1, True, 1, 0, {}, False, False, False, "")
+                    j = jeu(1, True, 1, 0, {},   False, False, False, "")
                     if not erreur and len(textList) == 0:
                         j = jeu(1, True, 1, 0, {}, False, False, False, "")
                     elif not erreur and len(textList) == 1:
-                        try:
-                            j = jeu(int(textList[0]), True, 1, 0, {}, False, False, False, "")
-                        except MauvaisIndice as inst:
-                            await message.channel.send(inst)
-                            erreur = True
-                        except:
+                        if textList[0].isalpha(): #Si le joueur cherche à faire une partie selon la langue
+                            if textList[0]=='FR': #Si elle est en FR
+                                print("YES in FR")
+                                j = jeu(1, True, 1, 0, {}, False, False, False, "") #Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
+
+                            elif textList[0]=='EN': #Si elle est en anglais
+                                print("YES in EN")
+                                j = jeu(1, False, 1, 0, {}, False, False, False, "") #Alors le bot lance une partie avec Niveau 1, en EN, à 1 tour
+                        if textList[0].isdigit(): #Si le joueur cherche à faire une partie selon le niveau
+                            try:
+                                j = jeu(int(textList[0]), True, 1, 0, {}, False, False, False, "")
+                            except MauvaisIndice as inst:
+                                await message.channel.send(inst)
+                                erreur = True
+                        else: #Exception
                             await message.channel.send(
-                                "Mauvaise saisie : `<anagramme(s) [niveau]` prend le niveau en argument.")
-                            erreur = True
+                                "Mauvaise saisie : ` !anagramme(s) [niveau ou EN/FR]`")
+
+
+
                     elif not erreur and len(textList) == 3:
                         try:
                             j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
@@ -272,7 +291,7 @@ async def on_message(message):
             json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][message.channel.id] = j.getAttributes()
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
-    #print(asyncio.get_running_loop(), "released lock")
+    # print(asyncio.get_running_loop(), "released lock")
 
 
 client.run(token)
