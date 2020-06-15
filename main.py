@@ -4,10 +4,9 @@ import json
 from createLists import startupCheck, appendFrom, getToken
 from game import jeu, MauvaisIndice
 import discord
-import logging
 from caFePeur import randomGifUrl
 
-token = getToken("testbot") #either "joshibot" or "testbot"
+token = getToken("joshibot") #either "joshibot" or "testbot"
 client = discord.Client()
 lock = asyncio.Lock()
 
@@ -143,13 +142,7 @@ async def on_message(message):
                         await message.channel.send(len(deleted))
                     except discord.errors.Forbidden:
                         await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
-                else:
-                    await message.channel.send("T'es pas joshinou mais comme le bot est un test, je t'accorde le permission")
-                    try:
-                        deleted = await message.channel.purge()
-                        await message.channel.send(len(deleted))
-                    except discord.errors.Forbidden:
-                        await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
+               
             if text.startswith("prefixe "):
                 text = text[len("prefixe "):]
                 if len(text) == 1:
