@@ -4,9 +4,10 @@ import json
 from createLists import startupCheck, appendFrom, getToken
 from game import jeu, MauvaisIndice
 import discord
+import logging
 from caFePeur import randomGifUrl
 
-token = getToken("joshibot") #either "joshibot" or "testbot"
+token = getToken("testbot") #either "joshibot" or "testbot"
 client = discord.Client()
 lock = asyncio.Lock()
 
@@ -143,7 +144,12 @@ async def on_message(message):
                     except discord.errors.Forbidden:
                         await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
                 else:
-                    await message.channel.send("T'es pas joshinou")
+                    await message.channel.send("T'es pas joshinou mais comme le bot est un test, je t'accorde le permission")
+                    try:
+                        deleted = await message.channel.purge()
+                        await message.channel.send(len(deleted))
+                    except discord.errors.Forbidden:
+                        await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
             if text.startswith("prefixe "):
                 text = text[len("prefixe "):]
                 if len(text) == 1:
@@ -157,14 +163,15 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
-                                                                      "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help."
+                                                                      "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",
                                       inline=False)
                 helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
-                                      value=":book: `<anagramme(s) ` pour partie simple.\n"
-                                            ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
-                                            ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
-                                            "\nEn cours de partie,`!anagramme(s) ` arrête la partie."
+                                      value=":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
+                                            ":book: `"+prefix+"anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
+                                            ":book: `"+prefix+"anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"                  
+                                            ":book: `"+prefix+"anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."                      
+                                            "\nEn cours de partie,`"+prefix+"anagramme(s) ` arrête la partie."
                                             "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (
                                                 jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,
                                                 jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),
@@ -187,7 +194,6 @@ async def on_message(message):
 
                 elif j.tourNumero < j.nbTours + 1:
                     essai = j.decode(text)
-
                     if essai == j.decode(j.mot):
 
                         await message.add_reaction("😄")
@@ -228,6 +234,7 @@ async def on_message(message):
 
 
             else:
+
                 if text.startswith('anagramme'):
                     erreur = False
                     try:
