@@ -6,7 +6,7 @@ from game import jeu, MauvaisIndice
 import discord
 from caFePeur import randomGifUrl
 
-token = getToken("joshibot") #either "joshibot" or "testbot"
+token = getToken("joshibot")
 client = discord.Client()
 lock = asyncio.Lock()
 
@@ -19,20 +19,18 @@ async def partieProMessage(j: jeu, message):
 
 @client.event
 async def on_ready():
-    check = startupCheck('liste.json', json.dumps({"FR": [], "EN": []}))
+    check = startupCheck('liste.json', json.dumps({"FR": [], "EN": [], "ES": []}))
     str_data = open('liste.json').read()
     json_data = json.loads(str_data)
     if not check:
         appendFrom(
             "https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/PG/2006/04/1-10000",
-            False, True, json_data)
+            "EN", json_data)
         appendFrom("https://fr.m.wiktionary.org/wiki/Utilisateur:Darkdadaah/Listes/Mots_dump/frwiki/2016-02-03",
-                   True, True, json_data)
-        print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]))
-        json_data["nbMots FR"] = len(json_data["FR"])
-        json_data["nbMots EN"] = len(json_data["EN"])
+                   "FR", json_data)
+        appendFrom("http://corpus.rae.es/frec/10000_formas.TXT", "ES", json_data)
 
-    json.dump(json_data, open('liste.json', 'w'), indent=2)
+        print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]), "ES : ", len(json_data["ES"]) )
 
     startupCheck('guilds.json', json.dumps([{}]))
     str_data = open('guilds.json').read()
@@ -45,7 +43,9 @@ async def on_ready():
 
         if str(guild.id) not in json_guilds[0]:
             json_guilds[0][guild.id] = {"prefix": "!",
-                                        "SalonsEtJeuxEnCoursAssocies": {channel.id: jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for channel in guild.text_channels},
+                                        "SalonsEtJeuxEnCoursAssocies": {
+                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes()
+                                            for channel in guild.text_channels},
                                         "XPjoueurs": {member.id: 0 for member in guild.members}
                                         }
 
@@ -87,7 +87,7 @@ async def on_guild_join(guild):
     if guild.id not in json_guilds[0]:
         json_guilds[0][guild.id] = {"prefix": "<",
                                     "SalonsEtJeuxEnCoursAssocies": {
-                                        channel.id: jeu(1, True, 1, 0, {}, False, False, False, "").getAttributes() for
+                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes() for
                                         channel in guild.text_channels},
                                     "XPjoueurs": {member.id: 0 for member in guild.members}
                                     }
@@ -142,7 +142,8 @@ async def on_message(message):
                         await message.channel.send(len(deleted))
                     except discord.errors.Forbidden:
                         await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
-               
+                else:
+                    await message.channel.send("T'es pas joshinou")
             if text.startswith("prefixe "):
                 text = text[len("prefixe "):]
                 if len(text) == 1:
@@ -156,19 +157,19 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help."
-                                                                      "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
+                                                                      "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
                                       inline=False)
                 helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
-                                      value=":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
-                                            ":book: `"+prefix+"anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
-                                            ":book: `"+prefix+"anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"                  
-                                            ":book: `"+prefix+"anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."                      
-                                            "\nEn cours de partie,`"+prefix+"anagramme(s) ` arrête la partie."
-                                            "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (
-                                                jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,
-                                                jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),
-                                      inline=False)
+                                      value=":book: `<anagramme(s) ` pour partie simple.\n"
+                                            ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
+                                            ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
+                                            "\nEn cours de partie,`!anagramme(s) ` arrête la partie."
+                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
+                                                jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
+                                                jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
+                                                jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
+                                    inline=False)
                 await message.channel.send(embed=helpMessage)
 
 
@@ -187,6 +188,7 @@ async def on_message(message):
 
                 elif j.tourNumero < j.nbTours + 1:
                     essai = j.decode(text)
+
                     if essai == j.decode(j.mot):
 
                         await message.add_reaction("😄")
@@ -197,8 +199,7 @@ async def on_message(message):
 
                         leaderboard = '\n'.join(
                             [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
-                            "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
                         if len(leaderboard) > 0:
                             embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
@@ -214,8 +215,7 @@ async def on_message(message):
                         await message.add_reaction("😢")
                         leaderboard = '\n'.join(
                             [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (
-                            "fr" if j.fr else "en") + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
                         if len(leaderboard) > 0:
                             embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
@@ -227,7 +227,6 @@ async def on_message(message):
 
 
             else:
-
                 if text.startswith('anagramme'):
                     erreur = False
                     try:
@@ -235,23 +234,24 @@ async def on_message(message):
                     except:
                         await message.channel.send("Mauvaise saisie")
                         erreur = True
-                    j = jeu(1, True, 1, 0, {},   False, False, False, "")
+                    j = jeu(1, "FR", 1, 0, {}, False, False, False, "")
                     if not erreur and len(textList) == 0:
-                        j = jeu(1, True, 1, 0, {}, False, False, False, "")
+                        j = jeu(1, "FR", 1, 0, {}, False, False, False, "")
                     elif not erreur and len(textList) == 1:
                         try:
-                            j = jeu(1, textList[0]== "FR", 1, 0, {}, False, False, False, "")  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
+                            j = jeu(1, textList[0].upper(), 1, 0, {}, False, False, False,
+                                    "")  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
 
                         except MauvaisIndice:
-                            j = jeu(int(textList[0]), True, 1, 0, {}, False, False, False, "")
+                            j = jeu(int(textList[0]), "FR", 1, 0, {}, False, False, False, "")
                         except:
                             await message.channel.send(
                                 "Mauvaise saisie : ` !anagramme(s) [niveau ou EN/FR]`")
-                            erreur=True
+                            erreur = True
 
                     elif not erreur and len(textList) == 3:
                         try:
-                            j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
+                            j = jeu(int(textList[0]), textList[1].upper(), int(textList[2]), 0, {}, False, False, False,
                                     "")
                             await partieProMessage(j, message)
                         except MauvaisIndice as inst:
