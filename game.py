@@ -6,7 +6,6 @@ import discord
 
 token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
 client = discord.Client()
-desc = '''Coucou. Je suis le bb de joshinou. Mon préfixe est \'<\'.'''
 
 
 class MauvaisIndice(Exception):
@@ -15,7 +14,7 @@ class MauvaisIndice(Exception):
 
 class jeu:
     json_data = None
-    fr = True
+    langue = "FR"
     niveauMax = 0
     niveau = 0
     dicoNiveaux: Dict[str, int] = {"niveau": "indiceMax"}
@@ -36,16 +35,7 @@ class jeu:
         self.json_data = json.loads(str_data)
 
     def reset(self):
-        self.setLangueFrancais(True)
-        self.setNiveauMax()
-        self.setNiveau(1)
-        self.nbTours = 1
-        self.scores = {}
-        self.tourNumero = 0
-        self.tourCommence = False
-        self.partieCommencee = False
-        self.partieEnPrepOuCommencee = False
-        self.mot = ""
+        self.__init__(1, "FR", 1, 0, {}, False, False, False, "")
 
     async def prochainTourOuFin(self, message, json_guilds):
         if self.tourNumero < self.nbTours:
@@ -81,13 +71,13 @@ class jeu:
             self.reset()
 
     def getAttributes(self):
-        return [self.niveau, self.fr, self.nbTours, self.tourNumero, self.scores, self.tourCommence,
+        return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.tourCommence,
                 self.partieCommencee, self.partieEnPrepOuCommencee, self.mot]
 
-    def __init__(self, niveau, francais, nbTours, tourNumero, scores, tourCommence, partieCommencee,
+    def __init__(self, niveau, langue, nbTours, tourNumero, scores, tourCommence, partieCommencee,
                  partieEnPrepOuCommencee, mot):
         self.setJsonData()
-        self.setLangueFrancais(francais)
+        self.langue=langue
         self.setNiveauMax()
         self.setNiveau(niveau)
         self.nbTours = nbTours
@@ -101,16 +91,14 @@ class jeu:
     def leaderboard(self):
         return self.scores
 
-    def setLangueFrancais(self, bool):
-        self.fr = bool
 
     def shuffledWord(self, word):
         melange = ''.join(random.sample(word, len(word)))
         return self.shuffledWord(melange) if melange == word else melange
 
     def setNiveauMax(self):
-        self.niveauMax = self.json_data["nbMots FR" if self.fr else "nbMots EN"] // 450
-        self.listeMots = self.json_data["FR" if self.fr else "EN"]
+        self.niveauMax = self.json_data["nbMots "+self.langue] // 450
+        self.listeMots = self.json_data[self.langue]
         for i in range(self.niveauMax):
             self.dicoNiveaux[self.niveauMax - i] = len(self.listeMots) // (i + 1)
 
@@ -129,8 +117,8 @@ class jeu:
         return "Langue : %s, Nombre de tours : %s. Niveau : %s. " \
                "\nNombre de mots tirés de la base de donnée :%i/%i. " \
                "Tour numéro %i" % (
-                   "FR" if self.fr else "EN", self.nbTours, self.niveau, len(self.listeMots),
-                   self.json_data['nbMots ' + ("FR" if self.fr else "EN")], self.tourNumero)
+                   self.langue, self.nbTours, self.niveau, len(self.listeMots),
+                   self.json_data['nbMots ' + self.langue], self.tourNumero)
 
     def addPlayer(self, nom):
         self.scores[nom] = 0

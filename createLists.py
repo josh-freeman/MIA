@@ -9,10 +9,12 @@ import urllib.request
 def printHtml(url):
     fp = urllib.request.urlopen(url)
     mybytes = fp.read()
+    if url.endswith("TXT"):
+        mystr=mybytes
+    else:
+        mystr = mybytes.decode("utf-8")
 
-    mystr = mybytes.decode("utf8")
     fp.close()
-
     return mystr
 
 def getToken(realOrTest:str):
@@ -34,7 +36,8 @@ def startupCheck(filename,s):
 
 
 
-def appendFrom(url, fr: bool, html: bool,json_data):
+def appendFrom(url, langue,json_data):
+    html= (langue=="FR" or langue == "EN")
     if html:
         fhandle = printHtml(url)
         soup = BeautifulSoup(fhandle, 'html.parser')
@@ -43,14 +46,14 @@ def appendFrom(url, fr: bool, html: bool,json_data):
                 text = i.text
                 if not re.search(' ', text) and text.islower():
                     if 1 < len(text) and text.isalpha():
-                        json_data["FR" if fr else "EN"].append(text)
+                        json_data[langue].append(text)
                         print("trouvé :", text)
-        json_data["FR" if fr else "EN"].sort(key=len)
     else:
-        for i in printHtml(url).split('\n'):
-            text=i
-            if not re.search(' ', text) and text.islower():
-                if 1 < len(text) and text.isalpha():
-                    json_data["FR" if fr else "EN"].append(text)
-                    print("trouvé :", text)
+        for i in str(printHtml(url)).split('\\t'):
+            text=i.strip()
+            if not re.search(' ', text) and text.islower() and text.isalpha and 1<len(text):
+                json_data[langue].append(text)
+                print("trouvé :", text)
+    json_data[langue].sort(key=len)
+    json_data["nbMots "+langue] = len(json_data[langue])
     json.dump(json_data, open('liste.json', 'w'), indent=2)
