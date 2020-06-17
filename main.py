@@ -157,18 +157,20 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help."	                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
-                                                                      "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",	                                                                      "\n:vulcan:  `<prefixe [prefixe]` pour changer de prefixe.",
-                                      inline=False)	                                      inline=False)
-                helpMessage.add_field(name="Anagame - Jeu d'anagrammes",	                helpMessage.add_field(name="Anagame - Jeu d'anagrammes",
-                                      value=":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"	                                      value=":book: `<anagramme(s) ` pour partie simple.\n"
-                                            ":book: `"+prefix+"anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"	                                            ":book: `<anagramme(s) [niveau]` pour préciser le niveau.\n"
-                                            ":book: `"+prefix+"anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"                  	                                            ":book: `<anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
-                                            ":book: `"+prefix+"anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."                      	                                            "\nEn cours de partie,`!anagramme(s) ` arrête la partie."
-                                            "\nEn cours de partie,`"+prefix+"anagramme(s) ` arrête la partie."	                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
-                                            "\nLe niveau max est `%i` en anglais, `%i` en français (niveau min 1)." % (	                                                jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
-                                                jeu(1, False, 1, 0, {}, False, False, False, "").niveauMax,	                                                jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
-                                                jeu(1, True, 1, 0, {}, False, False, False, "").niveauMax),	                                                jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help.", inline=False)
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
+                                                      "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",inline=False)
+                helpMessage.add_field(name="Anagame - Jeu d'anagrammes",value=
+                                            ":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
+
+                                            ":book: `"+prefix+"anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
+                                            ":book: `"+prefix+"anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"
+                                            ":book: `"+prefix+"anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
+                                            "\nEn cours de partie,`"+prefix+"anagramme(s) ` arrête la partie."
+                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
+                                            jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
+                                            jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
+                                            jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
                                       inline=False)
                 await message.channel.send(embed=helpMessage)
 
