@@ -6,7 +6,7 @@ from game import jeu, MauvaisIndice
 import discord
 from caFePeur import randomGifUrl
 
-token = getToken("joshibot")#"joshibot" or "testbot"
+token = getToken("joshibot")  # "joshibot" or "testbot"
 client = discord.Client()
 lock = asyncio.Lock()
 
@@ -30,7 +30,7 @@ async def on_ready():
                    "FR", json_data)
         appendFrom("http://corpus.rae.es/frec/10000_formas.TXT", "ES", json_data)
 
-        print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]), "ES : ", len(json_data["ES"]) )
+        print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]), "ES : ", len(json_data["ES"]))
 
     startupCheck('guilds.json', json.dumps([{}]))
     str_data = open('guilds.json').read()
@@ -38,16 +38,18 @@ async def on_ready():
     await client.wait_until_ready()
     await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Bien réveillé.",
                                                            type=discord.ActivityType.watching))
-
+    json_guilds[0]["joueurs"] = {}
     for guild in client.guilds:
 
         if str(guild.id) not in json_guilds[0]:
-            json_guilds[0][guild.id] = {"prefix": ("!" if token==getToken("testbot") else "<") ,
+            json_guilds[0][guild.id] = {"prefix": ("!" if token == getToken("testbot") else "<"),
                                         "SalonsEtJeuxEnCoursAssocies": {
                                             channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes()
                                             for channel in guild.text_channels},
-                                        "XPjoueurs": {member.id: 0 for member in guild.members}
                                         }
+            for member in guild.members:
+                if not member.id in json_guilds[0]["joueurs"]:
+                    json_guilds[0]["joueurs"][member.id] = {"XP":0}
 
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
@@ -57,7 +59,8 @@ async def on_member_join(member):
     print(member.id, "est arrivé dans", member.guild.name, "Initialisation de l'XP à zero")
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
-    json_guilds[0][str(member.guild.id)]["XPjoueurs"][member.id] = 0
+    if not member.id in json_guilds[0]["joueurs"]:
+        json_guilds[0]["joueurs"][member.id] = {"XP":0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -67,7 +70,7 @@ async def on_member_remove(member):
 
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
-    json_guilds[0][str(member.guild.id)]["XPjoueurs"].pop(str(member.id), None)
+    json_guilds[0]["joueurs"].pop(str(member.id), None)
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -89,8 +92,10 @@ async def on_guild_join(guild):
                                     "SalonsEtJeuxEnCoursAssocies": {
                                         channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes() for
                                         channel in guild.text_channels},
-                                    "XPjoueurs": {member.id: 0 for member in guild.members}
                                     }
+        for member in guild.members:
+            if not member.id in json_guilds[0]["joueurs"]:
+                json_guilds[0]["joueurs"][member.id] = {"XP":0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
     await guild.channels[i].send("Coucou '{}'!".format(guild.name))
 
@@ -157,19 +162,21 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help."
-                                                                     "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",inline=False)
-                helpMessage.add_field(name="Anagame - Jeu d'anagrammes",value=
-                                            ":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
+                helpMessage.add_field(name="Commandes de base",
+                                      value=":ear_with_hearing_aid: `" + prefix + "help` pour help."
+                                                                                  "\n:vulcan:  `" + prefix + "prefixe [prefixe]` pour changer de prefixe.",
+                                      inline=False)
+                helpMessage.add_field(name="Anagame - Jeu d'anagrammes", value=
+                ":book: `" + prefix + "anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
 
-                                            ":book: `"+prefix+"anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
-                                            ":book: `"+prefix+"anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"
-                                            ":book: `"+prefix+"anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
-                                            "\nEn cours de partie,`"+prefix+"anagramme(s) ` arrête la partie."
-                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
-                                            jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
-                                            jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
-                                            jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
+                                      ":book: `" + prefix + "anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
+                                                            ":book: `" + prefix + "anagramme(s) [EN/FR]` pour préciser la langue (1 tour, niveau 1).\n"
+                                                                                  ":book: `" + prefix + "anagramme(s) [niveau] EN/FR [nombre de tours]` pour lancer une partie pro."
+                                                                                                        "\nEn cours de partie,`" + prefix + "anagramme(s) ` arrête la partie."
+                                                                                                                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
+                    jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
+                    jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
+                    jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
                                       inline=False)
                 await message.channel.send(embed=helpMessage)
 
@@ -200,7 +207,9 @@ async def on_message(message):
 
                         leaderboard = '\n'.join(
                             [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot,
+                                              url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot,
+                                              color=0x00ff00)
                         if len(leaderboard) > 0:
                             embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
@@ -216,7 +225,9 @@ async def on_message(message):
                         await message.add_reaction("😢")
                         leaderboard = '\n'.join(
                             [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot, url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot, color=0x00ff00)
+                        embed = discord.Embed(title="Le mot était \"%s\"" % j.mot,
+                                              url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot,
+                                              color=0x00ff00)
                         if len(leaderboard) > 0:
                             embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
