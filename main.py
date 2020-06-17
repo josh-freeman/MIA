@@ -42,7 +42,7 @@ async def on_ready():
     for guild in client.guilds:
 
         if str(guild.id) not in json_guilds[0]:
-            json_guilds[0][guild.id] = {"prefix": "!",
+            json_guilds[0][guild.id] = {"prefix": ("!" if token==getToken("testbot") else "<") ,
                                         "SalonsEtJeuxEnCoursAssocies": {
                                             channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes()
                                             for channel in guild.text_channels},
@@ -157,9 +157,8 @@ async def on_message(message):
             if text.startswith('help'):
                 helpMessage = discord.Embed(color=0x00ff00)
                 helpMessage.set_author(name="Joshinou", url="https://github.com/charliebobjosh")
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help.", inline=False)
-                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `<help` pour help."
-                                                      "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",inline=False)
+                helpMessage.add_field(name="Commandes de base", value=":ear_with_hearing_aid: `"+prefix+"help` pour help."
+                                                                     "\n:vulcan:  `"+prefix+"prefixe [prefixe]` pour changer de prefixe.",inline=False)
                 helpMessage.add_field(name="Anagame - Jeu d'anagrammes",value=
                                             ":book: `"+prefix+"anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
 
