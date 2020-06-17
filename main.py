@@ -154,15 +154,21 @@ async def on_message(message):
                 attributs[6], attributs[7], attributs[8])
         if message.content.startswith(prefix):
             text = message.content[1:]
-
             if text.startswith("ca fé peur"):
                 if message.author.id == 499302416106258432 or message.author.id == 193424451013050368:
                     randomHorrorGif = discord.Embed(color=0xee82ee)
-                    randomHorrorGif.set_image(url=randomGifUrl())
+                    randomHorrorGif.set_image(url=randomGifUrl("horreur"))
                     await message.channel.send(embed=randomHorrorGif)
                 else:
                     await message.channel.send("Tu n'est pas Joshinou ou Yehlowinou, àbgebundeni bluetwurscht... ")
 
+            elif text.startswith("pikachu"):
+                if message.author.id == 499302416106258432 or message.author.id == 330438546710331413:
+                    randomPikaGif = discord.Embed(title="Un pikachu sauvage est apparu !",color=0xee82ee)
+                    randomPikaGif.set_image(url=randomGifUrl("pikachu"))
+                    await message.channel.send(embed=randomPikaGif)
+                else:
+                    await message.channel.send("¯\_(ツ)_/¯")
 
 
             elif text.startswith("delete all messages."):
