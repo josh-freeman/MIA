@@ -49,7 +49,7 @@ async def on_ready():
                                         }
             for member in guild.members:
                 if not member.id in json_guilds[0]["joueurs"]:
-                    json_guilds[0]["joueurs"][member.id] = {"XP":0}
+                    json_guilds[0]["joueurs"][member.id] = {"XP": 0}
 
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
@@ -60,7 +60,7 @@ async def on_member_join(member):
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
     if not member.id in json_guilds[0]["joueurs"]:
-        json_guilds[0]["joueurs"][member.id] = {"XP":0}
+        json_guilds[0]["joueurs"][member.id] = {"XP": 0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -95,7 +95,7 @@ async def on_guild_join(guild):
                                     }
         for member in guild.members:
             if not member.id in json_guilds[0]["joueurs"]:
-                json_guilds[0]["joueurs"][member.id] = {"XP":0}
+                json_guilds[0]["joueurs"][member.id] = {"XP": 0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
     await guild.channels[i].send("Coucou '{}'!".format(guild.name))
 
@@ -109,6 +109,31 @@ async def on_guild_remove(guild):
     json_guilds[0].pop(str(guild.id), None)
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
+
+@client.event
+async def on_guild_channel_create(channel):
+    str_data = open('guilds.json').read()
+    json_guilds = json.loads(str_data)
+    if str(channel.id) not in json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"]:
+        json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = [
+            1,
+            "FR",
+            1,
+            0,
+            {},
+            False,
+            False,
+            False,
+            ""
+        ]
+    json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+
+@client.event
+async def on_guild_channel_delete(channel):
+    str_data = open('guilds.json').read()
+    json_guilds = json.loads(str_data)
+    json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"].pop(str(channel.id), None)
+    json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 @client.event
 async def on_message(message):
