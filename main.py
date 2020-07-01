@@ -44,7 +44,7 @@ async def on_ready():
         if str(guild.id) not in json_guilds[0]:
             json_guilds[0][guild.id] = {"prefix": ("!" if token == getToken("testbot") else "<"),
                                         "SalonsEtJeuxEnCoursAssocies": {
-                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes()
+                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes()
                                             for channel in guild.text_channels},
                                         }
             for member in guild.members:
@@ -90,7 +90,7 @@ async def on_guild_join(guild):
     if guild.id not in json_guilds[0]:
         json_guilds[0][guild.id] = {"prefix": "<",
                                     "SalonsEtJeuxEnCoursAssocies": {
-                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, "").getAttributes() for
+                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes() for
                                         channel in guild.text_channels},
                                     }
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
@@ -224,9 +224,9 @@ async def on_message(message):
                                                                                   ":book: `" + prefix + "anagramme(s) [niveau] EN/FR/ES [nombre de tours]` pour lancer une partie pro."
                                                                                                         "\nEn cours de partie,`" + prefix + "anagramme(s) ` arrête la partie."
                                                                                                                                             "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
-                    jeu(1, "EN", 1, 0, {}, False, False, False, "").niveauMax,
-                    jeu(1, "FR", 1, 0, {}, False, False, False, "").niveauMax,
-                    jeu(1, "ES", 1, 0, {}, False, False, False, "").niveauMax),
+                    jeu(1, "EN", 1, 0, {}, False, False, False, [""]).niveauMax,
+                    jeu(1, "FR", 1, 0, {}, False, False, False, [""]).niveauMax,
+                    jeu(1, "ES", 1, 0, {}, False, False, False, [""]).niveauMax),
                                       inline=False)
                 await message.channel.send(embed=helpMessage)
 
@@ -296,15 +296,15 @@ async def on_message(message):
                     except:
                         await message.channel.send("Mauvaise saisie")
                         erreur = True
-                    j = jeu(1, "FR", 1, 0, {}, False, False, False, "")
+                    j = jeu(1, "FR", 1, 0, {}, False, False, False, [""])
                     if not erreur and len(textList) == 0:
-                        j = jeu(1, "FR", 1, 0, {}, False, False, False, "")
+                        j = jeu(1, "FR", 1, 0, {}, False, False, False, [""])
                     elif not erreur and len(textList) == 1:
                         try:
                             j = jeu(1, textList[0].upper(), 1, 0, {}, False, False, False,
-                                    "")  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
+                                    [""])  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
                         except MauvaisIndice:
-                            j = jeu(int(textList[0]), "FR", 1, 0, {}, False, False, False, "")
+                            j = jeu(int(textList[0]), "FR", 1, 0, {}, False, False, False, [""])
                         except:
                             await message.channel.send(
                                 "Mauvaise saisie : ` !anagramme(s) [niveau ou EN/FR]`")
@@ -312,7 +312,7 @@ async def on_message(message):
                     elif not erreur and len(textList) == 3:
                         try:
                             j = jeu(int(textList[0]), textList[1].upper(), int(textList[2]), 0, {}, False, False, False,
-                                    "")
+                                    [""])
                             await partieProMessage(j, message)
                         except MauvaisIndice as inst:
                             await message.channel.send(inst)
@@ -321,7 +321,7 @@ async def on_message(message):
                     elif not erreur and len(textList) == 3:
                         try:
                             j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
-                                    "")
+                                    [""])
                             await partieProMessage(j, message)
                         except MauvaisIndice as inst:
                             await message.channel.send(inst)
@@ -330,7 +330,7 @@ async def on_message(message):
                     if not erreur:
                         j.partieEnPrepOuCommencee = True
                         j.partieCommencee = True
-                        j.mot = j.pickword()
+                        j.pickword()
                         motMelange = j.shuffledWord(j.mot)
                         embed = discord.Embed(title="Mot : %s" % motMelange,
                                               description="Tour %i/%i" % (j.tourNumero + 1, j.nbTours), color=0xff0000)

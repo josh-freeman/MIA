@@ -19,6 +19,7 @@ class jeu:
     niveau = 0
     dicoNiveaux: Dict[str, int] = {"niveau": "indiceMax"}
     listeMots = []
+    motsJusqueLa = []
     nbTours = 1
     scores = {"joueur": "score"}
     tourNumero = 0
@@ -35,11 +36,11 @@ class jeu:
         self.json_data = json.loads(str_data)
 
     def reset(self):
-        self.__init__(1, "FR", 1, 0, {}, False, False, False, "")
+        self.__init__(1, "FR", 1, 0, {}, False, False, False, [""])
 
     async def prochainTourOuFin(self, message, json_guilds):
         if self.tourNumero < self.nbTours:
-            self.mot = self.pickword()
+            self.pickword()
             print("nouveau mot : ",self.mot)
             motMelange = self.shuffledWord(self.mot)
             embed = discord.Embed(title="Mot : %s" % motMelange,
@@ -72,10 +73,10 @@ class jeu:
 
     def getAttributes(self):
         return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.tourCommence,
-                self.partieCommencee, self.partieEnPrepOuCommencee, self.mot]
+                self.partieCommencee, self.partieEnPrepOuCommencee, self.motsJusqueLa]
 
     def __init__(self, niveau, langue, nbTours, tourNumero, scores, tourCommence, partieCommencee,
-                 partieEnPrepOuCommencee, mot):
+                 partieEnPrepOuCommencee, motsJusqueLa):
         self.setJsonData()
         self.langue=langue
         self.setNiveauMax()
@@ -86,7 +87,8 @@ class jeu:
         self.tourCommence = tourCommence
         self.partieCommencee = partieCommencee
         self.partieEnPrepOuCommencee = partieEnPrepOuCommencee
-        self.mot = mot
+        self.motsJusqueLa = motsJusqueLa
+        self.mot = motsJusqueLa[len(motsJusqueLa)-1]
 
     def leaderboard(self):
         return self.scores
@@ -103,7 +105,12 @@ class jeu:
             self.dicoNiveaux[self.niveauMax - i] = len(self.listeMots) // (i + 1)
 
     def pickword(self):
-        return random.choice(self.listeMots)
+        mot = random.choice(self.listeMots)
+        if mot in self.motsJusqueLa:
+            self.pickword()
+        else:
+            self.motsJusqueLa.append(mot)
+            self.mot = mot
 
     def setNiveau(self, niveau):
 
