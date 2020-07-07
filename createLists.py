@@ -44,16 +44,16 @@ def appendFrom(url, langue,json_data):
         for j in soup.find_all('table'):
             for i in j.find_all('td'):
                 text = i.text
-                if not re.search(' ', text) and text.islower():
-                    if 1 < len(text) and text.isalpha():
-                        json_data[langue].append(text)
-                        print("trouvé :", text)
+                if not re.search(' ', text) and text.islower() and 1 < len(text) and text.isalpha():
+                    json_data[langue].append(text)
+                    print("trouvé :", text)
     else:
         for i in str(printHtml(url)).split('\\t'):
             text=i.strip()
             if not re.search(' ', text) and text.islower() and text.isalpha and 1<len(text):
                 json_data[langue].append(text)
                 print("trouvé :", text)
+
     json_data[langue].sort(key=len)
     json_data["nbMots "+langue] = len(json_data[langue])
-    json.dump(json_data, open('liste.json', 'w'), indent=2)
+    return json_data

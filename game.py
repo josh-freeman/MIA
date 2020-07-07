@@ -19,7 +19,7 @@ class jeu:
     niveau = 0
     dicoNiveaux: Dict[str, int] = {"niveau": "indiceMax"}
     listeMots = []
-    motsJusqueLa = []
+    listeMotsJeu = []
     nbTours = 1
     scores = {"joueur": "score"}
     tourNumero = 0
@@ -33,21 +33,24 @@ class jeu:
         self.json_data = json.loads(str_data)
 
     async def prochainTourOuFin(self, message):
+        print("Tour numero : ", self.tourNumero)
+        print("self.tourNumero < self.nbTour : ", self.tourNumero < self.nbTours)
+
         if self.tourNumero < self.nbTours:
-            embed = discord.Embed(title="Recherche d'un nouveau mot pas encore donné...", color=0xff0000)
-            await message.channel.send(embed=embed)
-            self.pickword()
+            self.mot = self.listeMotsJeu[self.tourNumero]
             print("nouveau mot : ",self.mot)
-            motMelange = self.shuffledWord(self.mot)
+            motMelange = self.shuffledWord(self.mot) if len(
+                self.mot) > 2 else self.mot
             embed = discord.Embed(title="Mot : %s" % motMelange,
-                                  description="Tour %i/%i" % (self.tourNumero + 1, self.nbTours), color=0xff0000)
+                                  description="Tour %i/%i" % (self.tourNumero +1, self.nbTours), color=0xff0000)
+
             await message.channel.send(embed=embed)
 
 
         else:  #fin du jeu
             self.scores = {k: v for k, v in sorted(self.scores.items(), key=lambda item: item[1], reverse=True)}
 
-            embed = discord.Embed(title="Fin de jeu", description=str(self.tourNumero) + str(
+            embed = discord.Embed(title="Fin de jeu", description=str(self.tourNumero ) + str(
                 "ème" if self.tourNumero != 1 else "er") + " tour écoulé", color=0x4169e1)
             if len(self.scores) > 0:
                 v = list(self.scores.values())
@@ -65,22 +68,24 @@ class jeu:
             await message.channel.send(embed=embed)
         self.tourNumero += 1
 
-
     def getAttributes(self):
-        return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.motsJusqueLa] if self.tourNumero <= self.nbTours else 0
-    def __init__(self, niveau, langue, nbTours, tourNumero, scores, motsJusqueLa):
+        return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.listeMotsJeu] if self.tourNumero < self.nbTours + 1 else 0
+
+    def __init__(self, niveau, langue, nbTours, tourNumero, scores, listeMotsJeu):
         self.setJsonData()
         self.langue=langue
         self.setNiveauMax()
         self.setNiveau(niveau)
+        if listeMotsJeu == []:
+            listeMotsJeu = random.sample(self.listeMots, k=nbTours)
+            print("Nouvelle partie : ",listeMotsJeu)
         self.nbTours = nbTours
         self.scores = scores
         self.tourNumero = tourNumero
-        self.motsJusqueLa = motsJusqueLa
-        self.mot = motsJusqueLa[len(motsJusqueLa)-1]
+        self.listeMotsJeu = listeMotsJeu
+        self.mot = listeMotsJeu[tourNumero -1]
 
-    def leaderboard(self):
-        return self.scores
+
 
 
     def shuffledWord(self, word):
@@ -93,13 +98,7 @@ class jeu:
         for i in range(self.niveauMax):
             self.dicoNiveaux[self.niveauMax - i] = len(self.listeMots) // (i + 1)
 
-    def pickword(self):
-        mot = random.choice(self.listeMots)
-        if mot in self.motsJusqueLa:
-            self.pickword()
-        else:
-            self.motsJusqueLa.append(mot)
-            self.mot = mot
+
 
     def setNiveau(self, niveau):
 
@@ -116,5 +115,3 @@ class jeu:
                    self.langue, self.nbTours, self.niveau, len(self.listeMots),
                    self.json_data['nbMots ' + self.langue], self.tourNumero)
 
-    def addPlayer(self, nom):
-        self.scores[nom] = 0
