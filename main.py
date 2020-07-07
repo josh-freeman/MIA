@@ -6,10 +6,10 @@ from game import jeu, MauvaisIndice
 import discord
 from commandes import weather, randomGifUrl
 
-token = getToken("joshibot") #either "joshibot" or "testbot"
+token = getToken("joshibot")  # either "joshibot" or "testbot"
 client = discord.Client()
 lock = asyncio.Lock()
-default_prefix="<"
+
 
 async def partieProMessage(j: jeu, message):
     embed = discord.Embed(title="Partie pro lancée", color=0x00ff00)
@@ -31,20 +31,21 @@ async def on_ready():
         appendFrom("http://corpus.rae.es/frec/10000_formas.TXT", "ES", json_data)
         print("FR : ", len(json_data["FR"]), "EN : ", len(json_data["EN"]), "ES : ", len(json_data["ES"]))
 
-
     startupCheck('guilds.json', json.dumps([{}]))
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
     await client.wait_until_ready()
-    await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. def Prefix: {default_prefix}",
-                                                           type=discord.ActivityType.watching))
+    await client.change_presence(
+        activity=discord.Activity(name=f"{len(client.guilds)} servs. def Prefix: {default_prefix}",
+                                  type=discord.ActivityType.watching))
     json_guilds[0]["joueurs"] = {}
     for guild in client.guilds:
 
         if str(guild.id) not in json_guilds[0]:
             json_guilds[0][guild.id] = {"prefix": ("!" if token == getToken("testbot") else "<"),
                                         "SalonsEtJeuxEnCoursAssocies": {
-                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes()
+                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False,
+                                                            [""]).getAttributes()
                                             for channel in guild.text_channels},
                                         }
             for member in guild.members:
@@ -76,7 +77,7 @@ async def on_member_remove(member):
 
 @client.event
 async def on_guild_join(guild):
-    await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Default Prefix: {default_prefix}",
+    await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Default prefix: <",
                                                            type=discord.ActivityType.watching))
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
@@ -90,7 +91,8 @@ async def on_guild_join(guild):
     if guild.id not in json_guilds[0]:
         json_guilds[0][guild.id] = {"prefix": "<",
                                     "SalonsEtJeuxEnCoursAssocies": {
-                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes() for
+                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes()
+                                        for
                                         channel in guild.text_channels},
                                     }
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
@@ -101,7 +103,7 @@ async def on_guild_join(guild):
 @client.event
 async def on_guild_remove(guild):
     await client.change_presence(
-        activity=discord.Activity(name=f"{len(client.guilds)} servs. Prefix : {default_prefix}",
+        activity=discord.Activity(name=f"{len(client.guilds)} servs. Default prefix : <",
                                   type=discord.ActivityType.watching))
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
@@ -134,12 +136,6 @@ async def on_guild_channel_delete(channel):
     json_guilds = json.loads(str_data)
     json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"].pop(str(channel.id), None)
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
-
-
-
-
-
-
 
 
 @client.event
@@ -198,15 +194,15 @@ async def on_message(message):
                         await message.channel.send("prefixe : '%s'" % json_guilds[0][str(message.guild.id)]["prefix"])
                         print(text)
                         await client.change_presence(
-                            activity=discord.Activity(name=f"{len(client.guilds)} servs. Prefix : \"{text}\"",
+                            activity=discord.Activity(name=f"{len(client.guilds)} servs. Prefix : \"<\"",
                                                       type=discord.ActivityType.watching))
-                        default_prefix=text
+
                     else:
                         await message.channel.send("T'es pas joshinou (pas de permission)")
                 else:
                     await message.channel.send("%s ? C'est pas un préfixe, ça, gros beta..." % text)
 
-            if text.startswith("weather"): #Commande secrète, n'est pas sur le Bot officiel pour le moment
+            if text.startswith("weather"):  # Commande secrète, n'est pas sur le Bot officiel pour le moment
                 if message.author.id == 358629457025826816:
                     await message.channel.send(embed=weather(text))
 
