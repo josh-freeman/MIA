@@ -36,7 +36,7 @@ async def on_ready():
     json_guilds = json.loads(str_data)
     await client.wait_until_ready()
     await client.change_presence(
-        activity=discord.Activity(name=f"{len(client.guilds)} servs. def Prefix: {default_prefix}",
+        activity=discord.Activity(name=f"{len(client.guilds)} servs. default prefix: <",
                                   type=discord.ActivityType.watching))
     json_guilds[0]["joueurs"] = {}
     for guild in client.guilds:
@@ -44,8 +44,7 @@ async def on_ready():
         if str(guild.id) not in json_guilds[0]:
             json_guilds[0][guild.id] = {"prefix": ("!" if token == getToken("testbot") else "<"),
                                         "SalonsEtJeuxEnCoursAssocies": {
-                                            channel.id: jeu(1, "FR", 1, 0, {}, False, False, False,
-                                                            [""]).getAttributes()
+                                            str(channel.id): 0
                                             for channel in guild.text_channels},
                                         }
             for member in guild.members:
@@ -77,7 +76,7 @@ async def on_member_remove(member):
 
 @client.event
 async def on_guild_join(guild):
-    await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Default prefix: <",
+    await client.change_presence(activity=discord.Activity(name=f"{len(client.guilds)} servs. Default prefix : <",
                                                            type=discord.ActivityType.watching))
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
@@ -91,7 +90,7 @@ async def on_guild_join(guild):
     if guild.id not in json_guilds[0]:
         json_guilds[0][guild.id] = {"prefix": "<",
                                     "SalonsEtJeuxEnCoursAssocies": {
-                                        channel.id: jeu(1, "FR", 1, 0, {}, False, False, False, [""]).getAttributes()
+                                        str(channel.id): 0
                                         for
                                         channel in guild.text_channels},
                                     }
@@ -116,17 +115,7 @@ async def on_guild_channel_create(channel):
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
     if str(channel.id) not in json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"]:
-        json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = [
-            1,
-            "FR",
-            1,
-            0,
-            {},
-            False,
-            False,
-            False,
-            ""
-        ]
+        json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = 0
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -152,9 +141,10 @@ async def on_message(message):
         prefix = json_guilds[0][str(message.guild.id)]["prefix"]
 
         attributs = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)]
-
-        j = jeu(int(attributs[0]), attributs[1], int(attributs[2]), int(attributs[3]), attributs[4], attributs[5],
-                attributs[6], attributs[7], attributs[8])
+        if attributs != 0:
+            j = jeu(int(attributs[0]), attributs[1], int(attributs[2]), int(attributs[3]), attributs[4], attributs[5])
+        else:
+            j = 0
         if message.content.startswith(prefix):
             text = message.content[1:]
 
@@ -220,9 +210,9 @@ async def on_message(message):
                                                                                   ":book: `" + prefix + "anagramme(s) [niveau] EN/FR/ES [nombre de tours]` pour lancer une partie pro."
                                                                                                         "\nEn cours de partie,`" + prefix + "anagramme(s) ` arrête la partie."
                                                                                                                                             "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
-                    jeu(1, "EN", 1, 0, {}, False, False, False, [""]).niveauMax,
-                    jeu(1, "FR", 1, 0, {}, False, False, False, [""]).niveauMax,
-                    jeu(1, "ES", 1, 0, {}, False, False, False, [""]).niveauMax),
+                    jeu(1, "EN", 1, 0, {}, [""]).niveauMax,
+                    jeu(1, "FR", 1, 0, {}, [""]).niveauMax,
+                    jeu(1, "ES", 1, 0, {}, [""]).niveauMax),
                                       inline=False)
                 await message.channel.send(embed=helpMessage)
 
@@ -235,10 +225,10 @@ async def on_message(message):
                 else:
                     await message.channel.send("T'es pas joshinou")
 
-            if j.partieEnPrepOuCommencee:
-                if text.startswith('anagramme'):
+            if j != 0:
+                if text.startswith('anagramme'): #fin de jeu
                     j.nbTours = j.tourNumero
-                    await j.prochainTourOuFin(message, json_guilds)
+                    await j.prochainTourOuFin(message)
 
                 elif j.tourNumero < j.nbTours + 1:
                     essai = j.decode(text)
@@ -260,8 +250,7 @@ async def on_message(message):
 
                         await message.channel.send(embed=embed)
 
-                        j.tourCommence = False
-                        await j.prochainTourOuFin(message, json_guilds)
+                        await j.prochainTourOuFin(message)
 
 
 
@@ -277,7 +266,7 @@ async def on_message(message):
                             embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
 
                         await message.channel.send(embed=embed)
-                        await j.prochainTourOuFin(message, json_guilds)
+                        await j.prochainTourOuFin(message)
 
                     else:
                         await message.add_reaction("😬")
@@ -292,23 +281,21 @@ async def on_message(message):
                     except:
                         await message.channel.send("Mauvaise saisie")
                         erreur = True
-                    j = jeu(1, "FR", 1, 0, {}, False, False, False, [""])
+                    j = jeu(1, "FR", 1, 0, {}, [""])
                     if not erreur and len(textList) == 0:
-                        j = jeu(1, "FR", 1, 0, {}, False, False, False, [""])
+                        j = jeu(1, "FR", 1, 0, {}, [""])
                     elif not erreur and len(textList) == 1:
                         try:
-                            j = jeu(1, textList[0].upper(), 1, 0, {}, False, False, False,
-                                    [""])  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
+                            j = jeu(1, textList[0].upper(), 1, 0, {}, [""])  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
                         except MauvaisIndice:
-                            j = jeu(int(textList[0]), "FR", 1, 0, {}, False, False, False, [""])
+                            j = jeu(int(textList[0]), "FR", 1, 0, {}, [""])
                         except:
                             await message.channel.send(
                                 "Mauvaise saisie : ` !anagramme(s) [niveau ou EN/FR]`")
                             erreur = True
                     elif not erreur and len(textList) == 3:
                         try:
-                            j = jeu(int(textList[0]), textList[1].upper(), int(textList[2]), 0, {}, False, False, False,
-                                    [""])
+                            j = jeu(int(textList[0]), textList[1].upper(), int(textList[2]), 0, {}, [""])
                             await partieProMessage(j, message)
                         except MauvaisIndice as inst:
                             await message.channel.send(inst)
@@ -316,16 +303,16 @@ async def on_message(message):
 
                     elif not erreur and len(textList) == 3:
                         try:
-                            j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {}, False, False, False,
+                            j = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {},
                                     [""])
                             await partieProMessage(j, message)
                         except MauvaisIndice as inst:
                             await message.channel.send(inst)
                             erreur = True
+                    else:
+                        j = jeu(1, "FR", 1, 0, {}, [""])
 
                     if not erreur:
-                        j.partieEnPrepOuCommencee = True
-                        j.partieCommencee = True
                         j.pickword()
                         motMelange = j.shuffledWord(j.mot)
                         embed = discord.Embed(title="Mot : %s" % motMelange,
@@ -333,8 +320,9 @@ async def on_message(message):
 
                         await message.channel.send(embed=embed)
                         j.tourNumero += 1
-                        j.tourCommence = True
-            json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][message.channel.id] = j.getAttributes()
+
+
+            json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)] = j.getAttributes() if j != 0 else 0
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
     # print(asyncio.get_running_loop(), "released lock")

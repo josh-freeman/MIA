@@ -4,7 +4,7 @@ from typing import Dict
 from unidecode import unidecode as decode
 import discord
 
-token = "NzE5OTA1Mjk0NTk0ODY3MjMw.Xt-OOw.UsZbeoDBxNJZZZpLdvkhs-2Ty2E"
+
 client = discord.Client()
 
 
@@ -23,9 +23,6 @@ class jeu:
     nbTours = 1
     scores = {"joueur": "score"}
     tourNumero = 0
-    tourCommence = False
-    partieCommencee = False
-    partieEnPrepOuCommencee = False
     mot: str
 
     def decode(self, mot):
@@ -35,19 +32,17 @@ class jeu:
         str_data = open('liste.json').read()
         self.json_data = json.loads(str_data)
 
-    def reset(self):
-        self.__init__(1, "FR", 1, 0, {}, False, False, False, [""])
-
-    async def prochainTourOuFin(self, message, json_guilds):
+    async def prochainTourOuFin(self, message):
         if self.tourNumero < self.nbTours:
+            embed = discord.Embed(title="Recherche d'un nouveau mot pas encore donné...", color=0xff0000)
+            await message.channel.send(embed=embed)
             self.pickword()
             print("nouveau mot : ",self.mot)
             motMelange = self.shuffledWord(self.mot)
             embed = discord.Embed(title="Mot : %s" % motMelange,
                                   description="Tour %i/%i" % (self.tourNumero + 1, self.nbTours), color=0xff0000)
             await message.channel.send(embed=embed)
-            self.tourNumero += 1
-            self.tourCommence = True
+
 
         else:  #fin du jeu
             self.scores = {k: v for k, v in sorted(self.scores.items(), key=lambda item: item[1], reverse=True)}
@@ -68,15 +63,12 @@ class jeu:
             else:
                 embed.add_field(name="Pas de gagnant...", value="Oups", inline=True)
             await message.channel.send(embed=embed)
+        self.tourNumero += 1
 
-            self.reset()
 
     def getAttributes(self):
-        return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.tourCommence,
-                self.partieCommencee, self.partieEnPrepOuCommencee, self.motsJusqueLa]
-
-    def __init__(self, niveau, langue, nbTours, tourNumero, scores, tourCommence, partieCommencee,
-                 partieEnPrepOuCommencee, motsJusqueLa):
+        return [self.niveau, self.langue, self.nbTours, self.tourNumero, self.scores, self.motsJusqueLa] if self.tourNumero <= self.nbTours else 0
+    def __init__(self, niveau, langue, nbTours, tourNumero, scores, motsJusqueLa):
         self.setJsonData()
         self.langue=langue
         self.setNiveauMax()
@@ -84,9 +76,6 @@ class jeu:
         self.nbTours = nbTours
         self.scores = scores
         self.tourNumero = tourNumero
-        self.tourCommence = tourCommence
-        self.partieCommencee = partieCommencee
-        self.partieEnPrepOuCommencee = partieEnPrepOuCommencee
         self.motsJusqueLa = motsJusqueLa
         self.mot = motsJusqueLa[len(motsJusqueLa)-1]
 
