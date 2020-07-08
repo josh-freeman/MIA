@@ -170,7 +170,7 @@ async def on_message(message):
             elif text.startswith("delete all messages."):
                 if message.author.id == 499302416106258432:
                     try:
-                        deleted = await message.channel.purge()
+                        deleted = await message.channel.purge(limit=None)
                         await message.channel.send(len(deleted))
                     except discord.errors.Forbidden:
                         await message.channel.send("`403 Forbidden` : Je n'ai pas la permission (errorCode 50013)")
@@ -194,7 +194,7 @@ async def on_message(message):
                 else:
                     await message.channel.send("%s ? C'est pas un préfixe, ça, gros beta..." % text)
 
-            if text.startswith("weather"):  # Commande secrète, n'est pas sur le Bot officiel pour le moment
+            if text.startswith("weather"):  # Commande secrète
                 if message.author.id == 499302416106258432:
                     await message.channel.send(embed=weather(text))
 
@@ -207,11 +207,11 @@ async def on_message(message):
                                       inline=False)
                 helpMessage.add_field(name="Anagame - Jeu d'anagrammes", value=
                 ":book: `" + prefix + "anagramme(s) ` pour partie simple (1 tour, niveau 1 en FR).\n"
-                                      ":book: `" + prefix + "anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
-                                                            ":book: `" + prefix + "anagramme(s) [EN/FR/ES]` pour préciser la langue (1 tour, niveau 1).\n"
-                                                                                  ":book: `" + prefix + "anagramme(s) [niveau] EN/FR/ES [nombre de tours]` pour lancer une partie pro."
-                                                                                                        "\nEn cours de partie,`" + prefix + "anagramme(s) ` arrête la partie."
-                                                                                                                                            "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
+                ":book: `" + prefix + "anagramme(s) [niveau]` pour préciser le niveau (1 tour en FR).\n"
+                ":book: `" + prefix + "anagramme(s) [EN/FR/ES]` pour préciser la langue (1 tour, niveau 1).\n"
+                ":book: `" + prefix + "anagramme(s) [niveau] EN/FR/ES [nombre de tours]` pour lancer une partie pro."
+                "\nEn cours de partie,`" + prefix + "anagramme(s) ` arrête la partie."
+                "\nLe niveau max est `%i` en anglais, `%i` en français, `%i` en espagnol (niveau min 1)." % (
                     jeu(1, "EN", 1, 0, {}, []).niveauMax,
                     jeu(1, "FR", 1, 0, {}, []).niveauMax,
                     jeu(1, "ES", 1, 0, {}, []).niveauMax),
@@ -233,9 +233,12 @@ async def on_message(message):
                     await j.prochainTourOuFin(message)
 
                 essai = j.decode(text)
-                if essai == j.decode(j.mot):
+                if essai == j.decode(j.mot) or essai == 'abandon':
+                    if essai == j.decode(j.mot):
+                        await message.add_reaction("😄")
+                    else :
+                        await message.add_reaction("😢")
 
-                    await message.add_reaction("😄")
                     name = message.author.name
                     if not name in j.scores:
                         j.scores[name] = 0
@@ -252,23 +255,6 @@ async def on_message(message):
                     await message.channel.send(embed=embed)
 
                     await j.prochainTourOuFin(message)
-
-
-
-
-                elif essai == "abandon":
-                    await message.add_reaction("😢")
-                    leaderboard = '\n'.join(
-                        [k + " : %i point" % j.scores[k] + ("s" if j.scores[k] > 1 else "") for k in j.scores])
-                    embed = discord.Embed(title="Le mot était \"%s\"" % j.mot,
-                                          url="https://" + (j.langue.lower()) + ".m.wiktionary.org/wiki/" + j.mot,
-                                          color=0x00ff00)
-                    if len(leaderboard) > 0:
-                        embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
-
-                    await message.channel.send(embed=embed)
-                    await j.prochainTourOuFin(message)
-
                 else:
                     await message.add_reaction("😬")
 
@@ -312,7 +298,7 @@ async def on_message(message):
                     else:
                         j = jeu(1, "FR", 1, 0, {}, [])
 
-                    if not erreur:
+                    if not erreur: #bon lancement de début de partie
                         await j.prochainTourOuFin(message)
             json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)] = j.getAttributes() if j != 0 else 0
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)

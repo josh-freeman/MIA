@@ -34,13 +34,12 @@ class jeu:
 
     async def prochainTourOuFin(self, message):
         print("Tour numero : ", self.tourNumero)
-        print("self.tourNumero < self.nbTour : ", self.tourNumero < self.nbTours)
 
         if self.tourNumero < self.nbTours:
             self.mot = self.listeMotsJeu[self.tourNumero]
             print("nouveau mot : ",self.mot)
             motMelange = self.shuffledWord(self.mot) if len(
-                self.mot) > 2 else self.mot
+                self.mot) > 2 else self.mot[::-1]
             embed = discord.Embed(title="Mot : %s" % motMelange,
                                   description="Tour %i/%i" % (self.tourNumero +1, self.nbTours), color=0xff0000)
 
