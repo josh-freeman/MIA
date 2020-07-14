@@ -13,11 +13,10 @@ class MauvaisIndice(Exception):
 
 
 class jeu:
-    json_data = None
     langue = "FR"
     niveauMax = 0
     niveau = 0
-    dicoNiveaux: Dict[str, int] = {"niveau": "indiceMax"}
+    dicoNiveaux = {"niveau": "indiceMax"}
     listeMots = []
     listeMotsJeu = []
     nbTours = 1
@@ -31,6 +30,18 @@ class jeu:
     def setJsonData(self):
         str_data = open('liste.json').read()
         self.json_data = json.loads(str_data)
+
+    def maxXpForLevel(self,n):  # pour les niveaux d'XP, en commençant par le niveau 1
+        if n < 0:
+            print("Incorrect input")
+        # First Fibonacci number is 0, but we start at 1
+        elif n == 0:
+            return 100
+        # Second Fibonacci number is, but we take two
+        elif n == 1:
+            return 100
+        else:
+            return self.maxXpForLevel(n - 1) + self.maxXpForLevel(n - 2)
 
     async def prochainTourOuFin(self, message):
         print("Tour numero : ", self.tourNumero)
@@ -59,7 +70,7 @@ class jeu:
                 print("maxScore : ", maxScore)
 
                 for i in self.scores:
-                    embed.add_field(name=(":crown: " if self.scores[i] == maxScore else "") + "%s" % i,
+                    embed.add_field(name=(":crown: " if self.scores[i] == maxScore else "") + "%s" % message.guild.get_member(user_id=int(i)).display_name,
                                     value=str(self.scores[i]) + " Point" + ("s" if self.scores[i] != 1 else ""),
                                     inline=True)
             else:
@@ -84,9 +95,6 @@ class jeu:
         self.listeMotsJeu = listeMotsJeu
         self.mot = listeMotsJeu[tourNumero -1]
 
-
-
-
     def shuffledWord(self, word):
         melange = ''.join(random.sample(word, len(word)))
         return self.shuffledWord(melange) if melange == word else melange
@@ -96,8 +104,6 @@ class jeu:
         self.listeMots = self.json_data[self.langue]
         for i in range(self.niveauMax):
             self.dicoNiveaux[self.niveauMax - i] = len(self.listeMots) // (i + 1)
-
-
 
     def setNiveau(self, niveau):
 
