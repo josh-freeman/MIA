@@ -2,7 +2,7 @@ import asyncio
 import re
 import json
 from createLists import startupCheck, appendFrom, getToken
-from game import jeu, MauvaisIndice
+from game import jeu, MauvaisIndice, pendu
 import discord
 from commandes import weather, randomGifUrl
 from datetime import datetime
@@ -10,7 +10,7 @@ token = getToken("joshibot")  # either "joshibot" or "testbot"
 client = discord.Client()
 anagramLock = asyncio.Lock()
 aliasLock = asyncio.Lock()
-
+penduLock = asyncio.Lock()
 
 
 async def partieProMessage(j: jeu, message):
@@ -50,7 +50,7 @@ async def on_ready():
 
                                                 },
                                             "SalonsEtJeuxEnCoursAssocies": {
-                                                str(channel.id): 0
+                                                str(channel.id): {"anagramme":0, "pendu":0}
                                                 for
                                                 channel in guild.text_channels},
                                         }
@@ -59,16 +59,9 @@ async def on_ready():
 
     startupCheck('members.json', json.dumps(
         {"joueurs": {}}))
-    str_data = open('members.json').read()
-    json_members = json.loads(str_data)
-
-    for guild in client.guilds:  # checks if any member joined since then
-        for member in guild.members:
-            if str(member.id) not in json_members["joueurs"]:
-                json_members["joueurs"][str(member.id)] = {"XP": 0, "HP":0}
 
 
-    json.dump(json_members, open('members.json', 'w'), indent=2)
+
 
 
 
@@ -81,22 +74,12 @@ async def on_ready():
 
 @client.event
 async def on_member_join(member):
-    print(member.id, "est arrivé dans", member.guild.name, "Initialisation de l'XP à zero")
-    str_data = open('guilds.json').read()
-    json_guilds = json.loads(str_data)
-    if not str(member.id) in json_guilds[0]["joueurs"]:
-        json_guilds[0]["joueurs"][str(member.id)] = {"XP": 0, "HP":0}
-    json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+    print(member.id, "est arrivé dans", member.guild.name)
 
 
 @client.event
 async def on_member_remove(member):
-    print(member.id, "est parti de ", member.guild.name, "\neffacement de son XP")
-
-    str_data = open('guilds.json').read()
-    json_guilds = json.loads(str_data)
-    json_guilds[0]["joueurs"].pop(str(member.id), None)
-    json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+    print(member.id, "est parti de ", member.guild.name)
 
 
 @client.event
@@ -123,7 +106,7 @@ async def on_guild_join(guild):
 
                 },
             "SalonsEtJeuxEnCoursAssocies": {
-                str(channel.id): 0
+                str(channel.id): {"anagramme":0, "pendu":0}
                 for
                 channel in guild.text_channels},
         }
@@ -149,7 +132,7 @@ async def on_guild_channel_create(channel):
     str_data = open('guilds.json').read()
     json_guilds = json.loads(str_data)
     if str(channel.id) not in json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"]:
-        json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = 0
+        json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = {"anagramme":0, "pendu":0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -173,8 +156,10 @@ async def on_message(message):
         text = message.content[len(prefix):]
         if text.startswith("ca fé peur"):
             if message.author.id == 499302416106258432 or message.author.id == 193424451013050368:
+
                 randomHorrorGif = discord.Embed(color=0xee82ee)
                 randomHorrorGif.set_image(url=randomGifUrl("scary"))
+
                 await message.channel.send(embed=randomHorrorGif)
             else:
                 await message.channel.send("Tu n'est pas Joshinou ou Yehlowinou, àbgebundeni bluetwurscht... ")
@@ -209,7 +194,7 @@ async def on_message(message):
                 colour=0x00ff00,
                 timestamp=discord.Embed.Empty
             ).add_field(name="Regles du jeu", value="\n   Le bot vous donne un mot mélangé, vous devez deviner duquel il s'agit."
-                                                    "Il suffit de répondre avec sa proposition par `%svotreRéponseIci`."
+                                                    " Il suffit de répondre avec sa proposition par `%svotreRéponseIci`."
                                                     "\n\n   Les charactères spéciaux (accents, cédilles et autres) seront détéctés"
                                                     " automatiquement, pas besoin de les mettre."
                                                     "Si votre réponse est incorrecte, il la supprime pour que les autres " 
@@ -228,17 +213,20 @@ async def on_message(message):
                                      ).set_footer(text="Help 1/3", icon_url=client.user.avatar_url
                                                   )
             page2 = discord.Embed(
-                title="Alias",
+                title="Alias - commandes réglables",
                 colour=0x00ff00
-            ).add_field(name="Alias", value="Pas encore fini, déso",inline=False
-                        ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
+            ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                                      ).set_image(url=message.author.avatar_url
                                                  ).set_footer(text="Help 2/3", icon_url=client.user.avatar_url
                                                               )
+            for command in json_guilds[0][str(message.guild.id)]["alias"]:
+                alias = json_guilds[0][str(message.guild.id)]["alias"][command]
+                page2.add_field(name=command, value="Alias actuel : \n"+alias)
             page3 = discord.Embed(
                 title='Rien à mettre ici pour le moment...',
                 colour=0x00ff00
-            ).add_field(name="Rien à voir, circulez...", value="Pas encore fini, déso",inline=False
+            ).add_field(name="Rien à voir, circulez...", value="Ah si juste un truc, pour changer d'alias :`%salias commande raccourci`, "
+                                                               "où \"commande\" est le *titre* de la commande, trouvé en page 2"%prefix,inline=False
                         ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                                      ).set_footer(text="Help 3/3", icon_url=client.user.avatar_url)
 
@@ -306,7 +294,7 @@ async def on_message(message):
 
                 json_guilds[0][str(message.guild.id)]["alias"][text[0]] = text[1]
                 await message.channel.send(
-                    text[0]+" : '%s'" % text[1])
+                    "La nouvelle commande pour %s est '%s'" % (text[0],text[1]))
                 print(text)
             else:
                 await message.channel.send("%s ? Commande inconnue ou inchangeable" % text[0])
@@ -322,13 +310,14 @@ async def on_message(message):
         # solution : make different Locks for different actions
         str_data = open('guilds.json').read()
         json_guilds = json.loads(str_data)
-
+        str_data = open('members.json').read()
         prefix = json_guilds[0][str(message.guild.id)]["alias"]["prefix"]
         anagrammeCommand = json_guilds[0][str(message.guild.id)]["alias"]["anagramme"]
 
+
         if message.content.startswith(prefix):
             text = message.content[len(prefix):]
-            attributs = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)]
+            attributs = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)]["anagramme"]
 
             if attributs != 0:
                 j = jeu(int(attributs[0]), attributs[1], int(attributs[2]), int(attributs[3]), attributs[4],
@@ -345,16 +334,19 @@ async def on_message(message):
                 if essai == j.decode(j.mot) or essai == 'abandon':
                     if essai == j.decode(j.mot):
                         await message.add_reaction("😄")
+                        name = str(message.author.id)
+                        if not name in j.scores:
+                            j.scores[name] = 0
+
+                        j.scores[name] += 10 * j.niveau
+                        print(j.scores)
+
                     else:
                         await message.add_reaction("😢")
 
-                    name = str(message.author.id)
-                    if not name in j.scores:
-                        j.scores[name] = 0
-                    j.scores[name] += 10 * j.niveau
-                    print(j.scores)
                     leaderboard = '\n'.join(
-                        ["%s : %i point%s" % (message.guild.get_member(user_id=int(k)).display_name, j.scores[k], ("s" if j.scores[k] > 1 else "")) for k in j.scores])
+                        ["%s : %i point%s" % (message.guild.get_member(user_id=int(k)).display_name, j.scores[k],
+                                              ("s" if j.scores[k] > 1 else "")) for k in j.scores])
 
 
                     embed = discord.Embed(title="Le mot était \"%s\"" % j.mot,
@@ -414,10 +406,109 @@ async def on_message(message):
                     if not erreur:  # bon lancement de début de partie
                         await j.prochainTourOuFin(message)
             json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][
-                str(message.channel.id)] = j.getAttributes() if j != 0 else 0
+                str(message.channel.id)]["anagramme"] = j.getAttributes() if j != 0 else 0
+            json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+            # print(asyncio.get_running_loop(), "released anagramLock")
+
+    async with penduLock:
+        str_data = open('guilds.json').read()
+        json_guilds = json.loads(str_data)
+        prefix = json_guilds[0][str(message.guild.id)]["alias"]["prefix"]
+        penduCommand = "pendu"
+
+        if message.content.startswith(prefix):
+            text = message.content[len(prefix):]
+            attributs = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)]["pendu"]
+
+            if attributs != 0:
+                p = pendu(int(attributs[0]), attributs[1], int(attributs[2]), int(attributs[3]), attributs[4],
+                        attributs[5], attributs[6], attributs[7], attributs[8], attributs[9])
+            else:
+                p = 0
+
+            if p != 0:
+                if text.startswith(penduCommand):  # fin de jeu
+                    essai = p.decode(text[len(penduCommand+' '):])
+                    if essai == p.decode(p.mot) or essai == 'abandon':
+                        if essai == p.decode(p.mot):
+                            await message.add_reaction("😄")
+                            name = str(message.author.id)
+                            if not name in p.scores:
+                                p.scores[name] = 0
+
+                            p.scores[name] += 10 * p.niveau
+                            print(p.scores)
+
+                        else:
+                            await message.add_reaction("😢")
+
+                        leaderboard = '\n'.join(
+                            ["%s : %i point%s" % (message.guild.get_member(user_id=int(k)).display_name, p.scores[k],
+                                                  ("s" if p.scores[k] > 1 else "")) for k in p.scores])
+
+                        embed = discord.Embed(title="Le mot était \"%s\"" % p.mot,
+                                              url="https://" + (p.langue.lower()) + ".m.wiktionary.org/wiki/" + p.mot,
+                                              color=0x00ff00)
+                        if len(leaderboard) > 0:
+                            embed.add_field(name="Leaderboard", value=leaderboard, inline=False)
+
+                        await message.channel.send(embed=embed)
+
+                        await p.prochainTourOuFin(message)
+                    elif essai == "":
+                        p.nbTours = p.tourNumero
+                        await p.prochainTourOuFin(message)
+                    else:
+                        await message.channel.delete_messages([message])
+
+
+
+            else:
+
+                if text.startswith(penduCommand):
+                    erreur = False
+                    try:
+                        textList = re.findall(penduCommand + '(?:s)?(.*)', text)[0].split()
+                    except:
+                        await message.channel.send("Mauvaise saisie")
+                        erreur = True
+                    if not erreur and len(textList) == 0:
+                        p = pendu(1, "FR", 1, 0, {}, [], str(message.author.id), "", 0, "0")
+                    elif not erreur and len(textList) == 1:
+                        try:
+                            p = jeu(1, textList[0].upper(), 1, 0, {},
+                                    [])  # Alors le bot lance une partie avec Niveau 1, en FR, à 1 tour
+                        except MauvaisIndice:
+                            p = jeu(int(textList[0]), "FR", 1, 0, {}, [])
+                        except:
+                            await message.channel.send(
+                                "Mauvaise saisie : ` %s%s [niveau ou EN/FR]`" % (prefix, penduCommand))
+                            erreur = True
+                    elif not erreur and len(textList) == 3:
+                        try:
+                            p = pendu(int(textList[0]), textList[1].upper(), int(textList[2]), 0, {}, [], str(message.author.id), "", 0, "0")
+                            await partieProMessage(j, message)
+                        except MauvaisIndice as inst:
+                            await message.channel.send(inst)
+                            erreur = True
+
+                    elif not erreur and len(textList) == 3:
+                        try:
+                            p = jeu(int(textList[0]), textList[1] == 'FR', int(textList[2]), 0, {},
+                                    [])
+                            await partieProMessage(j, message)
+                        except MauvaisIndice as inst:
+                            await message.channel.send(inst)
+                            erreur = True
+                    else:
+                        p = jeu(1, "FR", 1, 0, {}, [])
+
+                    if not erreur:  # bon lancement de début de partie
+                        await p.prochainTourOuFin(message)
+            json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][
+                str(message.channel.id)]["pendu"] = p.getAttributes() if p != 0 else 0
             json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
-    # print(asyncio.get_running_loop(), "released anagramLock")
 
 
 client.run(token)
