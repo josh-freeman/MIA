@@ -82,13 +82,18 @@ class jeu:
                 print(self.scores)
 
                 for i in self.scores:
+                    xpToAdd = maxScore if self.scores[i] == maxScore else 0
+                    embed.set_footer(text= "%i XP pour chaque gagnant"%maxScore)
                     embed.add_field(
                         name=(":crown: " if self.scores[i] == maxScore and not isinstance(self, pendu) else "") + "%s" % message.guild.get_member(
                             user_id=int(i)).display_name,
                         value=str(self.scores[i]) + " Point" + ("s" if self.scores[i] != 1 else ""),
                         inline=True)
                     if i not in json_members["joueurs"]:
-                        json_members["joueurs"][i] = {"XP": 0, "HP": 0}
+                        json_members["joueurs"][i] = {"XP":  xpToAdd, "HP": 0}
+                    else:
+                        xp = json_members["joueurs"][i]["XP"]
+                        json_members["joueurs"][i]["XP"] += xpToAdd
                 json.dump(json_members, open('members.json', 'w'), indent=2)
 
             else:

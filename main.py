@@ -34,10 +34,9 @@ async def on_reaction_add(reaction, user):
             else:
                 p = 0
 
-            if p!= 0:
-                essai = chr(ord(reaction.emoji)-ord("🇦")+ord("a"))
+            if p != 0:
+                essai = chr(ord(reaction.emoji) - ord("🇦") + ord("a"))
                 rate = True
-
 
             reaction.remove(user)
             json_guilds[0][str(reaction.guild.id)]["SalonsEtJeuxEnCoursAssocies"][
@@ -210,10 +209,12 @@ async def on_message(message):
             await message.channel.send(embed=weather(text))
 
         elif text.startswith('profile'):
-            msg = discord.Embed(title = "User %s" % (message.author.name
-            ))
+            msg = discord.Embed(title="User %s" % (message.author.name
+                                                   )).add_field(name="Regles du jeu",
+                        value="Votre XP : INSERT XP HERE" )
+
             await message.channel.send(embed=msg.set_image(url=message.author.avatar_url)
-                       )
+                                       )
 
         elif text.startswith('help'):
 
@@ -250,7 +251,7 @@ async def on_message(message):
                 colour=0x00ff00
             ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                          ).set_footer(text="Help 2/3", icon_url=client.user.avatar_url
-                                                  )
+                                      )
             for command in json_guilds[0][str(message.guild.id)]["alias"]:
                 alias = json_guilds[0][str(message.guild.id)]["alias"][command]
                 page2.add_field(name=command, value="Alias actuel : \n" + alias)
@@ -259,7 +260,8 @@ async def on_message(message):
                 colour=0x00ff00
             ).add_field(name="Rien à voir, circulez...",
                         value="Ah si juste un truc, pour changer d'alias :`%salias commande raccourci`, "
-                              "où \"commande\" est le *titre* de la commande, trouvé en page 2. Aussi, vous pouvez afficher votre profil avec ```%sprofile```" % (prefix,prefix), inline=False
+                              "où \"commande\" est le *titre* de la commande, trouvé en page 2. Aussi, vous pouvez afficher votre profil avec ```%sprofile```" % (
+                              prefix, prefix), inline=False
                         ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                                      ).set_footer(text="Help 3/3", icon_url=client.user.avatar_url)
 
@@ -372,12 +374,10 @@ async def on_message(message):
                             j.scores[name] = 0
 
                         j.scores[name] += 10 * j.niveau
-                        print(j.scores)
 
                     else:
                         await message.add_reaction("😢")
-                    print(message.guild.get_member(719905294594867230))
-                    print(message.guild.members)
+
                     leaderboard = '\n'.join(
                         ["%s : %i point%s" % (message.guild.get_member(user_id=int(k)).display_name, j.scores[k],
                                               ("s" if j.scores[k] > 1 else "")) for k in j.scores])
@@ -393,7 +393,6 @@ async def on_message(message):
                     await j.prochainTourOuFin(message)
                 else:
                     await message.channel.delete_messages([message])
-
 
 
             else:
