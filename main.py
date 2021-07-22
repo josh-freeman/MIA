@@ -2,7 +2,7 @@ import asyncio
 import re
 import json
 from createLists import startupCheck, appendFrom, getToken
-from game import jeu, MauvaisIndice, pendu
+from game import jeu, MauvaisIndice, pendu, niveau
 import discord
 from commandes import weather, randomGifUrl
 from datetime import datetime
@@ -12,6 +12,8 @@ client = discord.Client()
 anagramLock = asyncio.Lock()
 aliasLock = asyncio.Lock()
 penduLock = asyncio.Lock()
+
+
 
 
 async def partieProMessage(j: jeu, message):
@@ -209,9 +211,13 @@ async def on_message(message):
             await message.channel.send(embed=weather(text))
 
         elif text.startswith('profile'):
-            msg = discord.Embed(title="User %s" % (message.author.name
-                                                   )).add_field(name="Regles du jeu",
-                        value="Votre XP : INSERT XP HERE" )
+            str_data = open('members.json').read()
+            json_members = json.loads(str_data)["joueurs"]
+            print(json_members)
+            xp = json_members[str(message.author.id)]["XP"]
+            msg = discord.Embed(title="User %s, niveau %i" % (message.author.name
+                                                              , niveau(xp))).add_field(name="Regles du jeu",
+                                                                                       value="Votre XP :%i" % xp)
 
             await message.channel.send(embed=msg.set_image(url=message.author.avatar_url)
                                        )
@@ -261,7 +267,7 @@ async def on_message(message):
             ).add_field(name="Rien à voir, circulez...",
                         value="Ah si juste un truc, pour changer d'alias :`%salias commande raccourci`, "
                               "où \"commande\" est le *titre* de la commande, trouvé en page 2. Aussi, vous pouvez afficher votre profil avec ```%sprofile```" % (
-                              prefix, prefix), inline=False
+                                  prefix, prefix), inline=False
                         ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                                      ).set_footer(text="Help 3/3", icon_url=client.user.avatar_url)
 

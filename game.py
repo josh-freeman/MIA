@@ -3,12 +3,16 @@ import random
 from typing import Dict
 from unidecode import unidecode as decode
 import discord
+from math import floor, log
 
-client = discord.Client()
 
 
 class MauvaisIndice(Exception):
     pass
+
+
+def niveau(xp: int):
+    return floor((1.1095 * log(1.13216 * xp + 8.45279))-2.35672)  # generated on dcode.com
 
 
 class jeu:
@@ -56,11 +60,16 @@ class jeu:
                 await message.channel.send(embed=embed)
 
             else:
-                links = ["https://i.imgur.com/gRRyXyj.png","https://i.imgur.com/y3vb7zv.png","https://i.imgur.com/y3vb7zv.png", "https://i.imgur.com/LHo66OT.png", "https://i.imgur.com/Mncr1YQ.png", "https://i.imgur.com/cRS7ehx.png", "https://i.imgur.com/f0N6Xt9.png", "https://i.imgur.com/ugTs74Y.png", "", "https://i.imgur.com/cqjfG7K.png"]
-                embed = discord.Embed(title=self.currentTry, color=0xff6347).set_image(url=links[self.essaisRates-1] if self.essaisRates != 0 else None)
+                links = ["https://i.imgur.com/gRRyXyj.png", "https://i.imgur.com/y3vb7zv.png",
+                         "https://i.imgur.com/y3vb7zv.png", "https://i.imgur.com/LHo66OT.png",
+                         "https://i.imgur.com/Mncr1YQ.png", "https://i.imgur.com/cRS7ehx.png",
+                         "https://i.imgur.com/f0N6Xt9.png", "https://i.imgur.com/ugTs74Y.png", "",
+                         "https://i.imgur.com/cqjfG7K.png"]
+                embed = discord.Embed(title=self.currentTry, color=0xff6347).set_image(
+                    url=links[self.essaisRates - 1] if self.essaisRates != 0 else None)
                 gameMessage = await message.channel.send(embed=embed)
                 self.gameMessageId = gameMessage.id
-                for i in range(ord("🇦"), ord("🇦")+20):
+                for i in range(ord("🇦"), ord("🇦") + 20):
                     await gameMessage.add_reaction(chr(i))
 
 
@@ -83,17 +92,30 @@ class jeu:
 
                 for i in self.scores:
                     xpToAdd = maxScore if self.scores[i] == maxScore else 0
-                    embed.set_footer(text= "%i XP pour chaque gagnant"%maxScore)
+                    str_data = open('guilds.json').read()
+                    json_guilds = json.loads(str_data)
+                    prefix = json_guilds[0][str(message.guild.id)]["alias"]["prefix"]
+                    embed.set_footer(text="%i XP pour chaque gagnant.\nConsultez votre niveau en tapant %s%s" % (
+                        maxScore, prefix, "profile"))
+                    print("hiya")
                     embed.add_field(
-                        name=(":crown: " if self.scores[i] == maxScore and not isinstance(self, pendu) else "") + "%s" % message.guild.get_member(
+                        name=(":crown: " if self.scores[i] == maxScore and not isinstance(self,
+                                                                                          pendu) else "") + "%s" % message.guild.get_member(
                             user_id=int(i)).display_name,
                         value=str(self.scores[i]) + " Point" + ("s" if self.scores[i] != 1 else ""),
                         inline=True)
+                    xp = json_members["joueurs"][i]["XP"] if i in json_members["joueurs"] else 0
                     if i not in json_members["joueurs"]:
-                        json_members["joueurs"][i] = {"XP":  xpToAdd, "HP": 0}
+                        json_members["joueurs"][i] = {"XP": xpToAdd, "HP": 0}
                     else:
-                        xp = json_members["joueurs"][i]["XP"]
                         json_members["joueurs"][i]["XP"] += xpToAdd
+                    currLvl = niveau(json_members["joueurs"][i]["XP"])
+                    if niveau(xp) < currLvl:
+                        lvlGain = abs(currLvl - niveau(xp))
+                        x = "x" if lvlGain > 1 else ""
+                        embed.add_field(name="XP",
+                            value="Gain de niveau%s : %s gagne %i niveau%s" % (x, message.author.name, lvlGain, x), inline=False)
+
                 json.dump(json_members, open('members.json', 'w'), indent=2)
 
             else:
@@ -146,20 +168,21 @@ class jeu:
 
 
 class pendu(jeu):
-    joueur:str
-    currentTry:str
-    essaisRates:int
-    gameMessageId:str
+    joueur: str
+    currentTry: str
+    essaisRates: int
+    gameMessageId: str
+
     def getAttributes(self):
         if jeu.getAttributes(self) != 0:
             return jeu.getAttributes(self) + [self.joueur, self.currentTry, self.essaisRates, self.gameMessageId]
         else:
             return 0
 
-    def __init__(self, niveau, langue, nbTours, tourNumero, scores, listeMotsJeu, joueur, currentTry, essaisRates, gameMessageId):
+    def __init__(self, niveau, langue, nbTours, tourNumero, scores, listeMotsJeu, joueur, currentTry, essaisRates,
+                 gameMessageId):
         jeu.__init__(self, niveau, langue, nbTours, tourNumero, scores, listeMotsJeu)
         self.joueur = joueur
-        self.currentTry = "_"*len(self.mot) if currentTry == "" else currentTry
+        self.currentTry = "_" * len(self.mot) if currentTry == "" else currentTry
         self.essaisRates = essaisRates
         self.gameMessageId = gameMessageId
-
