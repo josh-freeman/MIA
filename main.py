@@ -5,15 +5,15 @@ from createLists import startupCheck, appendFrom, getToken
 from game import jeu, MauvaisIndice, pendu, niveau
 import discord
 from commandes import weather, randomGifUrl
-from datetime import datetime
+from random import randrange
 
 token = getToken("joshibot")  # either "joshibot" or "testbot"
 client = discord.Client()
 anagramLock = asyncio.Lock()
 aliasLock = asyncio.Lock()
 penduLock = asyncio.Lock()
-
-
+clickerLock = asyncio.Lock()
+clickerEmoji = "✔"
 
 
 async def partieProMessage(j: jeu, message):
@@ -24,6 +24,34 @@ async def partieProMessage(j: jeu, message):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    async with clickerLock:
+        str_data_1 = open('guilds.json').read()
+        json_guilds = json.loads(str_data_1)
+        testLst = json_guilds[0][str(reaction.message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][
+            str(reaction.message.channel.id)][
+            "clicker"]
+        clickerMsgLst = testLst if testLst is not None else []
+
+        if client.user.id != user.id and reaction.message.id in clickerMsgLst and str(reaction.emoji) == clickerEmoji:
+            spltLst = reaction.message.content.split("\n")
+            spltLst[0] = str(int(spltLst[0]) + 1)
+            string = "\n".join(spltLst)
+            await reaction.message.edit(content=string)
+            await reaction.message.remove_reaction(reaction.emoji, user)
+
+            if randrange(5) == 0:
+                str_data_2 = open('members.json').read()
+                json_members = json.loads(str_data_2)
+                if str(user.id) not in json_members["joueurs"]:
+                    json_members["joueurs"][str(user.id)] = {"XP": 0, "HP": 0}
+                notif_message = discord.Embed(color=0xee82ee)
+                notif_message.set_thumbnail(url=user.avatar_url)
+                notif_message.add_field(name="Gain de point !", value="%s gagne un point d'expérience" % user.name)
+                json_members["joueurs"][str(user.id)]["XP"] += 1
+                json.dump(json_members, open('members.json', 'w'), indent=2)
+                msg = await reaction.message.channel.send(embed=notif_message)
+                await msg.delete(delay=2)
+
     async with penduLock:
         if ord(reaction.emoji) in [i for i in range(ord("🇦"), ord("🇦") + 26)] and user != client.user:
             str_data = open('guilds.json').read()
@@ -73,11 +101,12 @@ async def on_ready():
                     {
                         "prefix": ("!" if token == getToken("testbot") else "<"),
                         "weather": "weather",
-                        "anagramme": "anagramme"
+                        "anagramme": "anagramme",
+                        "clicker": "clicker"
 
                     },
                 "SalonsEtJeuxEnCoursAssocies": {
-                    str(channel.id): {"anagramme": 0, "pendu": 0}
+                    str(channel.id): {"anagramme": 0, "pendu": 0, "clicker": 0}
                     for
                     channel in guild.text_channels},
             }
@@ -124,11 +153,12 @@ async def on_guild_join(guild):
                 {
                     "prefix": ("!" if token == getToken("testbot") else "<"),
                     "weather": "weather",
-                    "anagramme": "anagramme"
+                    "anagramme": "anagramme",
+                    "clicker": "clicker"
 
                 },
             "SalonsEtJeuxEnCoursAssocies": {
-                str(channel.id): {"anagramme": 0, "pendu": 0}
+                str(channel.id): {"anagramme": 0, "pendu": 0, "clicker": 0}
                 for
                 channel in guild.text_channels},
         }
@@ -155,7 +185,8 @@ async def on_guild_channel_create(channel):
     json_guilds = json.loads(str_data)
     if str(channel.id) not in json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"]:
         json_guilds[0][str(channel.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(channel.id)] = {"anagramme": 0,
-                                                                                                 "pendu": 0}
+                                                                                                 "pendu": 0,
+                                                                                                 "clicker": 0}
     json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
 
 
@@ -174,10 +205,28 @@ async def on_message(message):
     prefix = json_guilds[0][str(message.guild.id)]["alias"]["prefix"]
     weatherCommand = json_guilds[0][str(message.guild.id)]["alias"]["weather"]
     anagrammeCommand = json_guilds[0][str(message.guild.id)]["alias"]["anagramme"]
+    clickerCommand = json_guilds[0][str(message.guild.id)]["alias"]["clicker"]
 
     if message.content.startswith(prefix):
         text = message.content[len(prefix):]
-        if text.startswith("ca fé peur"):
+
+        if text.startswith(clickerCommand):
+            clickerMsg = await message.channel.send("0\nUne chance sur 5 de gagner un XP à chaque clic.")
+            msgIds = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
+                "clicker"]
+            if msgIds is 0 or msgIds is None:
+                json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
+                    "clicker"] = [clickerMsg.id]
+            else:
+                print(msgIds)
+                msgIds.append(clickerMsg.id)
+                json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
+                    "clicker"] = msgIds
+            await clickerMsg.add_reaction(clickerEmoji)
+            json.dump(json_guilds, open('guilds.json', 'w'), indent=2)
+
+
+        elif text.startswith("ca fé peur"):
             if message.author.id == 499302416106258432 or message.author.id == 193424451013050368:
 
                 randomHorrorGif = discord.Embed(color=0xee82ee)
@@ -247,25 +296,26 @@ async def on_message(message):
                                                           jeu(1, "FR", 1, 0, {}, []).niveauMax,
                                                           jeu(1, "ES", 1, 0, {}, []).niveauMax),
                                                 inline=False
-                                                ).set_author(name="Link to Joshinou's Github",
-                                                             url="https://github.com/charliebobjosh"
+                                                ).set_author(name="Pour inviter le bot sur ton serveur",
+                                                             url="https://discord.com/oauth2/authorize?client_id=701487692793249833&scope=bot&permissions=536964160"
                                                              ).set_footer(text="Help 1/3",
                                                                           icon_url=client.user.avatar_url
                                                                           )
             page2 = discord.Embed(
                 title="Alias - commandes réglables",
                 colour=0x00ff00
-            ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
+            ).set_author(name="Link to Joshinou's Github", url="https://github.com/josh-freeman"
                          ).set_footer(text="Help 2/3", icon_url=client.user.avatar_url
                                       )
             for command in json_guilds[0][str(message.guild.id)]["alias"]:
                 alias = json_guilds[0][str(message.guild.id)]["alias"][command]
                 page2.add_field(name=command, value="Alias actuel : \n" + alias)
             page3 = discord.Embed(
-                title='Rien à mettre ici pour le moment...',
+                title='Clicker game',
                 colour=0x00ff00
-            ).add_field(name="Rien à voir, circulez...",
-                        value="Ah si juste un truc, pour changer d'alias :`%salias commande raccourci`, "
+            ).add_field(name="Jeu idle de compteur",
+                        value=("Essaie la commande %s%s" % (prefix, clickerCommand)) +
+                              "\nAh et juste un truc, pour changer d'alias :`%salias commande raccourci`, "
                               "où \"commande\" est le *titre* de la commande, trouvé en page 2. Aussi, vous pouvez afficher votre profil avec ```%sprofile```" % (
                                   prefix, prefix), inline=False
                         ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
