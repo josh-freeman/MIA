@@ -10,10 +10,17 @@ from random import choice
 
 def randomGifUrl(search):
     data = json.loads(urllib.request.urlopen(
-        "http://api.giphy.com/v1/gifs/search?q="+search+"&api_key=n50bkKdN6ZQdr6wsKjvzHDBcTN1Sx9Is&limit=20").read())
+        "http://api.giphy.com/v1/gifs/search?q="+search+"&api_key=n50bkKdN6ZQdr6wsKjvzHDBcTN1Sx9Is&limit=200").read())
+    try:
+        return choice(data["data"])["images"]["downsized_large"]["url"]
+    except:
+        return data["message"]
 
-    return choice(data["data"])["images"]["downsized_large"]["url"]
-
+async def custom_emoji(guild, imageName):
+    with open(imageName, "rb") as image:
+        f = image.read()
+        image = bytearray(f)
+    await guild.create_custom_emoji(name="Test", image=image, reason="For fun")
 
 def weather(text):
     api_key = "7fa29540945b8ce7e5b329b5b5497def"
@@ -25,7 +32,7 @@ def weather(text):
     url = "http://api.openweathermap.org/data/2.5/weather?appid=" + api_key + "&q=" + ville
     response = requests.get(url)
     resp_js = response.json()
-    if resp_js["cod"] != "404":  #D'après mes recherches sur google --> Si le site est bien allumé, donc pas d'erreur 404, ce qui correspond à la partie "cod" pour reponse.json(). MAIS SURTOUT --> SI la ville existe dans la base de donnée de leur serveur meteo.
+    if resp_js["cod"] != "404":  #SI la ville existe dans la base de donnée du serveur meteo.
         main = resp_js["main"]
         temperature_kelvin = main["temp"]
         pression_atmos = main["pressure"]
