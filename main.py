@@ -7,7 +7,7 @@ import discord
 from commandes import weather, randomGifUrl
 from random import randrange
 
-token = getToken("joshibot")  # either "joshibot" or "testbot"
+token = getToken("testbot")  # either "joshibot" or "testbot"
 client = discord.Client()
 anagramLock = asyncio.Lock()
 aliasLock = asyncio.Lock()
@@ -233,7 +233,7 @@ async def on_message(message):
                     leaderboard.set_thumbnail(url=a.avatar_url)
 
                 usr = str(k if a is None else a.name)
-                leaderboard.add_field(name="#%i : User %s"%(i+1,usr),value=v["XP"],inline=False)
+                leaderboard.add_field(name="#%i : User %s"%(i+1,usr),value="Niveau __%i__ (%i XP)"%(niveau(v["XP"]),v["XP"]),inline=False)
                 i += 1
                 if i == LEADERBOARD_LENGTH:
                     break
