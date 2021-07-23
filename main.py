@@ -7,7 +7,7 @@ import discord
 from commandes import weather, randomGifUrl
 from random import randrange
 
-token = getToken("testbot")  # either "joshibot" or "testbot"
+token = getToken("joshibot")  # either "joshibot" or "testbot"
 client = discord.Client()
 anagramLock = asyncio.Lock()
 aliasLock = asyncio.Lock()
@@ -229,15 +229,20 @@ async def on_message(message):
 
             for (k, v) in sorted_json_members:
                 a = message.guild.get_member(user_id=int(k))
-                if i==0 and a is not None:
+                if i == 0 and a is not None:
                     leaderboard.set_thumbnail(url=a.avatar_url)
 
                 usr = str(k if a is None else a.name)
-                leaderboard.add_field(name="#%i : User %s"%(i+1,usr),value="Niveau __%i__ (%i XP)"%(niveau(v["XP"]),v["XP"]),inline=False)
+                leaderboard.add_field(name="#%i : User %s" % (i + 1, usr),
+                                      value="Niveau __%i__ (%i XP)" % (niveau(v["XP"]), v["XP"]), inline=False)
                 i += 1
                 if i == LEADERBOARD_LENGTH:
                     break
-            leaderboard.set_footer(text="si un joueur est extérieur au serveur, seul son ID s'affiche.",icon_url=client.user.avatar_url)
+            leaderboard.set_footer(text="si un joueur est extérieur au serveur, seul son ID s'affiche.",
+                                   icon_url=client.user.avatar_url).set_author(
+                name="Pour inviter le bot sur ton serveur",
+                url="https://discord.com/oauth2/authorize?client_id=701487692793249833&scope=bot&permissions=536964160"
+                )
 
             await message.channel.send(embed=leaderboard)
 
@@ -246,12 +251,12 @@ async def on_message(message):
             clickerMsg = await message.channel.send("0\nUne chance sur 5 de gagner un XP à chaque clic.")
             msgIds = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                 "clicker"]
-            if msgIds is 0 or msgIds is None:
+            if msgIds == 0 or msgIds is None:
                 json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                     "clicker"] = [clickerMsg.id]
             else:
-                if msgIds.len() > MAX_CLICKER_MSG_LENGTH_PER_CHANNEL:
-                    del msgIds[:MAX_CLICKER_MSG_LENGTH_PER_CHANNEL/2]
+                if len(msgIds) > MAX_CLICKER_MSG_LENGTH_PER_CHANNEL:
+                    del msgIds[:MAX_CLICKER_MSG_LENGTH_PER_CHANNEL / 2]
                 msgIds.append(clickerMsg.id)
                 json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                     "clicker"] = msgIds
@@ -307,6 +312,30 @@ async def on_message(message):
 
         elif text.startswith('help'):
 
+            page0 = discord.Embed(
+                title="Sommaire et résumés",
+                colour=0x00ff00,
+                timestamp=discord.Embed.Empty
+            ).add_field(name="Mini-jeux",
+                        value=":smile_cat: Différents mini-jeux sont disponibles :smile_cat: "
+                              "\n\t:white_small_square: Anagame :keyboard:"
+                              "\n\t:white_small_square: Clicker :mouse_three_button:"
+                              "\n:small_red_triangle:Chacun des jeux vous fait gagner des points d'XP. Accédez à:"
+                              "\n\t:white_small_square: Votre niveau avec la commade ```%s%s```" % (prefix, "profile") +
+                              "\n\t:white_small_square: Le leaderboard mondial avec la commande ```%s%s```" % (
+                              prefix, leaderboardCommand) +
+                              "\nPour votre confort, vous pouvez changer certaines commandes avec la commande ```%s%s```" % (
+                              prefix, "alias")
+
+                        ).add_field(name="Sommaire", value="Règles du jeu d'anagrammes : p.1"
+                                                           "\nAlias - commandes réglables : p.2"
+                                                           "\nClicker game : p.3"
+                                    ).set_author(name="Pour inviter le bot sur ton serveur",
+                                                 url="https://discord.com/oauth2/authorize?client_id=701487692793249833&scope=bot&permissions=536964160"
+                                                 ).set_footer(text="Help 0/3",
+                                                              icon_url=client.user.avatar_url
+                                                              )
+
             page1 = discord.Embed(
                 title="Anagame - Jeu d'anagrammes",
                 colour=0x00ff00,
@@ -314,8 +343,8 @@ async def on_message(message):
             ).add_field(name="Regles du jeu",
                         value="\n   Le bot vous donne un mot mélangé, vous devez deviner duquel il s'agit."
                               " Il suffit de répondre avec sa proposition par `%svotreRéponseIci`."
-                              "\n\n   Les charactères spéciaux (accents, cédilles et autres) seront détéctés"
-                              " automatiquement, pas besoin de les mettre."
+                              "\n\n   **Les charactères spéciaux (accents, cédilles et autres) seront détéctés**"
+                              " __**automatiquement**__, pas besoin de les mettre."
                               "Si votre réponse est incorrecte, il la supprime pour que les autres "
                               "joueurs ne la voient pas. Sinon, vous remportez le tour.\n"
                               ":star2:Essayez par vous-même !:star2:" % prefix
@@ -355,9 +384,9 @@ async def on_message(message):
                         ).set_author(name="Link to Joshinou's Github", url="https://github.com/charliebobjosh"
                                      ).set_footer(text="Help 3/3", icon_url=client.user.avatar_url)
 
-            pages = [page1, page2, page3]
+            pages = [page0, page1, page2, page3]
 
-            messageID = await message.channel.send(embed=page1)
+            messageID = await message.channel.send(embed=page0)
 
             await messageID.add_reaction('\u23ee')
             await messageID.add_reaction('\u25c0')
@@ -376,11 +405,11 @@ async def on_message(message):
                         i -= 1
                         await messageID.edit(embed=pages[i])
                 if emoji == '\u25b6':
-                    if i < 2:
+                    if i < len(pages) - 1:
                         i += 1
                         await messageID.edit(embed=pages[i])
                 if emoji == '\u23ed':
-                    i = 2
+                    i = len(pages) - 1
                     await messageID.edit(embed=pages[i])
 
                 def check(reaction, user):
