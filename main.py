@@ -41,14 +41,17 @@ async def on_reaction_add(reaction, user):
 
             if randrange(5) == 0:
                 str_data_2 = open('members.json').read()
-                json_members = json.loads(str_data_2)
-                if str(user.id) not in json_members["joueurs"]:
-                    json_members["joueurs"][str(user.id)] = {"XP": 0, "HP": 0}
+                tmp = json.loads(str_data_2)
+                json_members = tmp["joueurs"]
+                if str(user.id) not in json_members:
+                    json_members[str(user.id)] = {"XP": 0, "HP": 0}
                 notif_message = discord.Embed(color=0xee82ee)
                 notif_message.set_thumbnail(url=user.avatar_url)
                 notif_message.add_field(name="Gain de point !", value="%s gagne un point d'expérience" % user.name)
-                json_members["joueurs"][str(user.id)]["XP"] += 1
-                json.dump(json_members, open('members.json', 'w'), indent=2)
+                json_members[str(user.id)]["XP"] += 1
+
+                tmp["joueurs"] = json_members
+                json.dump(tmp, open('members.json', 'w'), indent=2)
                 msg = await reaction.message.channel.send(embed=notif_message)
                 await msg.delete(delay=2)
 
@@ -102,7 +105,8 @@ async def on_ready():
                         "prefix": ("!" if token == getToken("testbot") else "<"),
                         "weather": "weather",
                         "anagramme": "anagramme",
-                        "clicker": "clicker"
+                        "clicker": "clicker",
+                        "leaderboard": "leaderboard"
 
                     },
                 "SalonsEtJeuxEnCoursAssocies": {
@@ -154,7 +158,8 @@ async def on_guild_join(guild):
                     "prefix": ("!" if token == getToken("testbot") else "<"),
                     "weather": "weather",
                     "anagramme": "anagramme",
-                    "clicker": "clicker"
+                    "clicker": "clicker",
+                    "leaderboard": "leaderboard"
 
                 },
             "SalonsEtJeuxEnCoursAssocies": {
@@ -206,11 +211,38 @@ async def on_message(message):
     weatherCommand = json_guilds[0][str(message.guild.id)]["alias"]["weather"]
     anagrammeCommand = json_guilds[0][str(message.guild.id)]["alias"]["anagramme"]
     clickerCommand = json_guilds[0][str(message.guild.id)]["alias"]["clicker"]
+    leaderboardCommand = json_guilds[0][str(message.guild.id)]["alias"]["leaderboard"]
+    LEADERBOARD_LENGTH = 3
+    MAX_CLICKER_MSG_LENGTH_PER_CHANNEL = 100
 
     if message.content.startswith(prefix):
         text = message.content[len(prefix):]
 
-        if text.startswith(clickerCommand):
+        if text.startswith(leaderboardCommand):
+            str_data = open('members.json').read()
+            json_members = json.loads(str_data)["joueurs"]
+            sorted_json_members = iter({k: v for k, v in
+                                        sorted(json_members.items(), key=lambda item: item[1]["XP"],
+                                               reverse=True)}.items())
+            leaderboard = discord.Embed(color=0xff0000, title="Leaderboard mondial :Top %i" % LEADERBOARD_LENGTH)
+            i = 0
+
+            for (k, v) in sorted_json_members:
+                a = message.guild.get_member(user_id=int(k))
+                if i==0 and a is not None:
+                    leaderboard.set_thumbnail(url=a.avatar_url)
+
+                usr = str(k if a is None else a.name)
+                leaderboard.add_field(name="#%i : User %s"%(i+1,usr),value=v["XP"],inline=False)
+                i += 1
+                if i == LEADERBOARD_LENGTH:
+                    break
+            leaderboard.set_footer(text="si un joueur est extérieur au serveur, seul son ID s'affiche.",icon_url=client.user.avatar_url)
+
+            await message.channel.send(embed=leaderboard)
+
+
+        elif text.startswith(clickerCommand):
             clickerMsg = await message.channel.send("0\nUne chance sur 5 de gagner un XP à chaque clic.")
             msgIds = json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                 "clicker"]
@@ -218,7 +250,8 @@ async def on_message(message):
                 json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                     "clicker"] = [clickerMsg.id]
             else:
-                print(msgIds)
+                if msgIds.len() > MAX_CLICKER_MSG_LENGTH_PER_CHANNEL:
+                    del msgIds[:MAX_CLICKER_MSG_LENGTH_PER_CHANNEL/2]
                 msgIds.append(clickerMsg.id)
                 json_guilds[0][str(message.guild.id)]["SalonsEtJeuxEnCoursAssocies"][str(message.channel.id)][
                     "clicker"] = msgIds
@@ -261,7 +294,8 @@ async def on_message(message):
 
         elif text.startswith('profile'):
             str_data = open('members.json').read()
-            json_members = json.loads(str_data)["joueurs"]
+            tmp = json.loads(str_data)
+            json_members = tmp["joueurs"]
             print(json_members)
             xp = json_members[str(message.author.id)]["XP"]
             msg = discord.Embed(title="User %s, niveau %i" % (message.author.name
@@ -401,7 +435,6 @@ async def on_message(message):
         # solution : make different Locks for different actions
         str_data = open('guilds.json').read()
         json_guilds = json.loads(str_data)
-        str_data = open('members.json').read()
         prefix = json_guilds[0][str(message.guild.id)]["alias"]["prefix"]
         anagrammeCommand = json_guilds[0][str(message.guild.id)]["alias"]["anagramme"]
 

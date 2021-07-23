@@ -114,7 +114,8 @@ class jeu:
                         lvlGain = abs(currLvl - niveau(xp))
                         x = "x" if lvlGain > 1 else ""
                         embed.add_field(name="XP",
-                            value="Gain de niveau%s : %s gagne %i niveau%s" % (x, message.author.name, lvlGain, x), inline=False)
+                            value="Gain de niveau%s : %s gagne %i niveau%s" % (x, message.guild.get_member(
+                            user_id=int(i)).display_name, lvlGain, x), inline=False)
 
                 json.dump(json_members, open('members.json', 'w'), indent=2)
 
